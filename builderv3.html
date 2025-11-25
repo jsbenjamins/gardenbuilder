@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Garden Builder — multi-tile</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+
+  <style>
+    html,body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    #sidebar {
+      width: 260px;
+      background: #f6f6f6;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.08);
+    }
+
+    h3 { margin: 6px 0; font-size: 14px; color: #333; }
+
+    .panel-row { display:flex; gap:8px; align-items: center; flex-wrap:wrap; }
+
+    .item, .tool {
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      box-sizing: border-box;
+    }
+    .item img { max-width: 48px; max-height: 48px; pointer-events: none; user-select:none; }
+    .selected { border-color: #4caf50; box-shadow: 0 0 6px rgba(76,175,80,0.25); }
+
+    #stage-container { flex: 1; position: relative; width: 100%; height: 100%; }
+
+    .hint { font-size: 12px; color: #666; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <h3>Tools</h3>
+    <div class="panel-row" id="tools">
+      <div class="tool" data-tool="erase" title="Erase (delete) item">🧹</div>
+      <div class="tool" data-tool="pick" title="Pick item to select it">👆</div>
+    </div>
+
+    <h3>Elements</h3>
+    <div class="panel-row" id="elements">
+      <div class="item" data-type="tree1" title="Tree 1 (2×2)"><img src="assets/tree1.png" alt="tree1"></div>
+      <div class="item" data-type="tree2" title="Tree 2 (2×2)"><img src="assets/tree2.png" alt="tree2"></div>
+      <div class="item" data-type="tree3" title="Tree 3 (3×2)"><img src="assets/tree3.png" alt="tree3"></div>
+      <div class="item" data-type="bush1" title="Bush 1 (1×1)"><img src="assets/bush1.png" alt="bush1"></div>
+      <div class="item" data-type="bush2" title="Bush 2 (1×1)"><img src="assets/bush2.png" alt="bush2"></div>
+      <div class="item" data-type="bush3" title="Bush 3 (1×1)"><img src="assets/bush3.png" alt="bush3"></div>
+    </div>
+
+    <div class="hint">Click a tool (erase/pick) or an element, then click the grid to place/pick/delete. Multi-tile sprites snap to grid.</div>
+  </div>
+
+  <div id="stage-container"></div>
+
+<script>
+/* ===================== CONFIG ====================== */
+const GRID_SIZE = 15;
+const CELL_SIZE = 32;           // tile pixel size
+const WIDTH = GRID_SIZE * CELL_SIZE;
+const HEIGHT = GRID_SIZE * CELL_SIZE;
+
+// grass variants (you already have these in assets/)
+const grassTiles = [
+  'assets/grass1.png',
+  'assets/grass2.png',
+  'assets/grass3.png',
+  'assets/grass4.png'
+];
+
+/* sprite definitions with tile sizes you provided */
+const spriteData = {
+  tree1: { src: 'assets/tree1.png', tileW: 2, tileH: 2 },
+  tree2: { src: 'assets/tree2.png', tileW: 2, tileH: 2 },
+  tree3: { src: 'assets/tree3.png', tileW: 3, tileH: 2 },
+  bush1: { src: 'assets/bush1.png', tileW: 1, tileH: 1 },
+  bush2: { src: 'assets/bush2.png', tileW: 1, tileH: 1 },
+  bush3: { src: 'assets/bush3.png', tileW: 1, tileH: 1 },
+};
+
+/* ===================== KONVA SETUP ====================== */
+const stage = new Konva.Stage({
+  container: 'stage-container',
+  width: WIDTH,
+  height: HEIGHT
+});
+
+const bgLayer = new Konva.Layer();
+const itemLayer = new Konva.Layer();
+stage.add(bgLayer);
+stage.add(itemLayer);
+
+/* ===================== PRELOAD IMAGES ====================== */
+function preload(paths) {
+  return Promise.all(paths.map(p => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ src: p, img });
+    img.onerror = (e) => {
+      console.warn('Failed to load image:', p, e);
+      resolve({ src: p, img: null }); // resolve anyway so UI still works
+    };
+    img.src = p;
+  })));
+}
+
+// preload grass + sprites then render grid
+const spritePaths = Object.values(spriteData).map(s => s.src);
+preload([...grassTiles, ...spritePaths]).then(loaded => {
+  // map src -> Image
+  const imageMap = {};
+  for (const entry of loaded) {
+    if (entry.img) imageMap[entry.src] = entry.img;
+  }
+
+  // ------------------- draw randomized grass grid -------------------
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const src = grassTiles[Math.floor(Math.random() * grassTiles.length)];
+      const img = imageMap[src] || null;
+      const tile = new Konva.Image({
+        x: x * CELL_SIZE,
+        y: y * CELL_SIZE,
+        width: CELL_SIZE,
+        height: CELL_SIZE,
+        image: img
+      });
+      // disable events on background tiles so click reaches bgLayer handlers
+      tile.listening(false);
+      bgLayer.add(tile);
+    }
+  }
+  bgLayer.draw();
+
+  // store preloaded images for placement
+  window.__IMG_MAP = imageMap;
+}).catch(err => {
+  console.error('Preload error', err);
+});
+
+/* ===================== UI SELECTION HANDLING ====================== */
+let selectedTool = null;   // 'erase' | 'pick' | null
+let selectedType = null;   // e.g. 'tree1'
+let zCounter = 1;
+
+// helpers to clear UI selections (you use separate functions)
+function clearSelectedUItool() {
+  document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+}
+function clearSelectedUIitem() {
+  document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+}
+
+document.querySelectorAll('.tool').forEach(el => {
+  el.addEventListener('click', () => {
+    clearSelectedUItool();
+    el.classList.add('selected');
+    selectedTool = el.getAttribute('data-tool');
+    /*selectedType = null; // selecting a tool clears current item selection
+    clearSelectedUIitem();*/
+  });
+});
+
+document.querySelectorAll('.item').forEach(el => {
+  el.addEventListener('click', () => {
+    clearSelectedUIitem();
+    el.classList.add('selected');
+    selectedType = el.getAttribute('data-type');
+    // clear tool selection (you wanted both persistent; here we switch to item)
+    /*clearSelectedUItool();
+    selectedTool = null;*/
+  });
+});
+
+/* ===================== PLACEMENT / COLLISIONS ======================
+   Approach:
+   - Each placed Konva.Image will have custom attrs:
+       spriteKey: 'tree1', tileW, tileH
+   - For placement, we check if any existing item overlaps any of the target tiles.
+   - For deletion/picking we search for the top-most item containing the clicked tile.
+================================================================== */
+
+// helper: check if a grid rectangle [x..x+w-1, y..y+h-1] collides with any existing item
+function areaOccupied(gx, gy, wTiles, hTiles) {
+  const children = itemLayer.getChildren();
+  for (const child of children) {
+    const cx = Math.round(child.x() / CELL_SIZE);
+    const cy = Math.round(child.y() / CELL_SIZE);
+    const cw = Math.round(child.width() / CELL_SIZE);
+    const ch = Math.round(child.height() / CELL_SIZE);
+
+    // rect overlap test
+    if (!(gx + wTiles - 1 < cx || cx + cw - 1 < gx || gy + hTiles - 1 < cy || cy + ch - 1 < gy)) {
+      // overlap found
+      return true;
+    }
+  }
+  return false;
+}
+
+// create & add sprite to itemLayer
+function placeSpriteAt(spriteKey, gx, gy) {
+  const data = spriteData[spriteKey];
+  if (!data) return;
+  const tileW = data.tileW;
+  const tileH = data.tileH;
+
+  // boundary check
+  if (gx < 0 || gy < 0 || gx + tileW > GRID_SIZE || gy + tileH > GRID_SIZE) {
+    // outside grid
+    console.log('Placement out of bounds');
+    return;
+  }
+
+  // collision check
+  if (areaOccupied(gx, gy, tileW, tileH)) {
+    // don't place if area occupied
+    console.log('Area occupied — cannot place', spriteKey);
+    return;
+  }
+
+  // get preloaded image, fallback to on-the-fly Image object
+  const img = (window.__IMG_MAP && window.__IMG_MAP[data.src]) ? window.__IMG_MAP[data.src] : null;
+
+  const imageObj = img || new Image();
+  if (!img) imageObj.src = data.src;
+
+  imageObj.onload = () => {
+    const kimg = new Konva.Image({
+      id: `item-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+      x: gx * CELL_SIZE,
+      y: gy * CELL_SIZE,
+      width: tileW * CELL_SIZE,
+      height: tileH * CELL_SIZE,
+      image: imageObj,
+      spriteKey,
+      tileW,
+      tileH,
+      zIndex: zCounter++
+    });
+
+    // smaller anchor pop-in
+    kimg.scale({ x: 0.1, y: 0.1 });
+    itemLayer.add(kimg);
+
+    kimg.to({
+      scaleX: 1,
+      scaleY: 1,
+      duration: 0.15,
+      easing: Konva.Easings.EaseOut
+    });
+
+    itemLayer.draw();
+  };
+
+  // if image already loaded, onload may not fire; handle immediate
+  if (imageObj.complete && imageObj.naturalWidth) {
+    imageObj.onload();
+  }
+}
+
+// delete the topmost sprite that covers tile gx,gy
+function deleteSpriteAt(gx, gy) {
+  // find children in reverse order (topmost first)
+  const children = itemLayer.getChildren().toArray().reverse();
+  for (const child of children) {
+    const cx = child.x() / CELL_SIZE;
+    const cy = child.y() / CELL_SIZE;
+    const cw = child.width() / CELL_SIZE;
+    const ch = child.height() / CELL_SIZE;
+    if (gx >= cx && gx < cx + cw && gy >= cy && gy < cy + ch) {
+      // animate out
+      child.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          child.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+      return;
+    }
+  }
+}
+
+// pick: find topmost sprite covering tile and set UI selection to its type
+function pickSpriteAt(gx, gy) {
+  const children = itemLayer.getChildren().toArray().reverse();
+  for (const child of children) {
+    const cx = child.x() / CELL_SIZE;
+    const cy = child.y() / CELL_SIZE;
+    const cw = child.width() / CELL_SIZE;
+    const ch = child.height() / CELL_SIZE;
+    if (gx >= cx && gx < cx + cw && gy >= cy && gy < cy + ch) {
+      const key = child.attrs.spriteKey;
+      if (key) {
+        clearSelectedUIitem();
+        clearSelectedUItool();
+        selectedType = key;
+        // highlight UI element
+        const el = document.querySelector(`[data-type="${key}"]`);
+        if (el) el.classList.add('selected');
+      }
+      return;
+    }
+  }
+}
+
+/* ===================== CLICK HANDLERS ====================== */
+// unified handler uses bgLayer & itemLayer listeners
+function handleGridClick() {
+  const pos = stage.getPointerPosition();
+  console.log(pos);
+  if (!pos) return;
+  const gx = Math.floor(pos.x / CELL_SIZE);
+  const gy = Math.floor(pos.y / CELL_SIZE);
+
+  if (selectedTool === 'erase') {
+    deleteSpriteAt(gx, gy);
+    return;
+  }
+
+  if (selectedTool === 'pick') {
+    pickSpriteAt(gx, gy);
+    return;
+  }
+
+  if (selectedType) {
+    // place with top-left snap
+    placeSpriteAt(selectedType, gx, gy);
+    return;
+  }
+}
+
+// listen on both layers — background tiles are set to not listen so bgLayer gets clicks reliably
+bgLayer.on('click', handleGridClick);
+itemLayer.on('click', handleGridClick);
+
+/* ===================== OPTIONAL: keyboard shortcuts ====================== */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    // clear selections
+    clearSelectedUItool();
+    clearSelectedUIitem();
+    selectedTool = null;
+    selectedType = null;
+  }
+});
+</script>
+
+</body>
+</html>

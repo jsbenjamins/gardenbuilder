@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 200px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      background: white;
+    }
+    #stage-container { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Elements</h3>
+    <div class="item" data-type="flower">🌸</div>
+    <div class="item" data-type="tree">🌳</div>
+    <div class="item" data-type="bush">🌿</div>
+    <div class="item" data-type="water">💧</div>
+  </div>
+  
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 15;
+    const CELL_SIZE = 40;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width,
+      height
+    });
+
+    const gridLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(gridLayer);
+    stage.add(itemLayer);
+
+    // Draw grid
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const cell = new Konva.Rect({
+          x: x * CELL_SIZE,
+          y: y * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE,
+          stroke: '#ddd'
+        });
+        gridLayer.add(cell);
+      }
+    }
+    gridLayer.draw();
+
+    // Current element type to place
+    let selectedType = null;
+
+    // Sidebar drag logic
+    document.querySelectorAll('.item').forEach((el) => {
+      el.addEventListener('click', () => {
+        selectedType = el.getAttribute('data-type');
+      });
+    });
+
+    // Convert type to emoji
+    function createEmojiForType(type) {
+      if (type === 'flower') return '🌸';
+      if (type === 'tree') return '🌳';
+      if (type === 'bush') return '🌿';
+      if (type === 'water') return '💧';
+      return '❓';
+    }
+
+    // Handle placing on click
+    stage.on('click', (e) => {
+      if (!selectedType) return;
+
+      const pos = stage.getPointerPosition();
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Remove previous item in same cell
+      const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+      if (existing) existing.destroy();
+
+      const emoji = new Konva.Text({
+        id: `cell-${gridX}-${gridY}`,
+        x: gridX * CELL_SIZE + 10,
+        y: gridY * CELL_SIZE + 5,
+        text: createEmojiForType(selectedType),
+        fontSize: 28
+      });
+
+      itemLayer.add(emoji);
+      itemLayer.draw();
+    });
+  </script>
+</body>
+</html>

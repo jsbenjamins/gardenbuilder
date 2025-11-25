@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+    }
+
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+
+    #tools {
+      display: flex;
+      gap: 5px;
+    }
+
+    #stage-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="sidebar">
+    <h3>Tools</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase">🧹</div>
+      <div class="tool" data-tool="pick">👆</div>
+    </div>
+
+    <h3>Elements</h3>
+    <div class="item" data-type="flower"><img src="assets/flower.png" width="40"></div>
+    <div class="item" data-type="tree"><img src="assets/tree.png" width="40"></div>
+    <div class="item" data-type="bush"><img src="assets/bush.png" width="40"></div>
+  </div>
+
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 15;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+
+    const grassTiles = [
+      "assets/grass1.png",
+      "assets/grass2.png",
+      "assets/grass3.png",
+      "assets/grass4.png"
+    ];
+
+    const stage = new Konva.Stage({
+      container: "stage-container",
+      width,
+      height
+    });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // ------------------------- IMAGE PRELOADER -------------------------
+    function preloadImages(paths) {
+      return Promise.all(
+        paths.map(src => {
+          return new Promise(res => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => res({ src, img });
+          });
+        })
+      );
+    }
+
+    // Render grass grid after preloading
+    preloadImages(grassTiles).then(loaded => {
+      const imgs = loaded.map(o => o.img);
+
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const img = imgs[Math.floor(Math.random() * imgs.length)];
+          const tile = new Konva.Image({
+            x: x * CELL_SIZE,
+            y: y * CELL_SIZE,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+            image: img
+          });
+          bgLayer.add(tile);
+        }
+      }
+      bgLayer.draw();
+    });
+
+    // ------------------------- UI SELECTION -------------------------
+    let selectedTool = null;
+    let selectedType = null;
+    let zCounter = 1;
+
+    function clearSelectedTool() {
+      document.querySelectorAll(".tool").forEach(el => el.classList.remove("selected"));
+    }
+    function clearSelectedItem() {
+      document.querySelectorAll(".item").forEach(el => el.classList.remove("selected"));
+    }
+
+    document.querySelectorAll(".tool").forEach(el => {
+      el.addEventListener("click", () => {
+        clearSelectedTool();
+        el.classList.add("selected");
+        selectedTool = el.getAttribute("data-tool");
+      });
+    });
+
+    document.querySelectorAll(".item").forEach(el => {
+      el.addEventListener("click", () => {
+        clearSelectedItem();
+        el.classList.add("selected");
+        selectedType = el.getAttribute("data-type");
+      });
+    });
+
+    // ------------------------- SPRITE DATA -------------------------
+    const spriteImages = {
+      flower: "assets/flower.png",
+      tree: "assets/tree.png",
+      bush: "assets/bush.png"
+    };
+
+    function placeSprite(type, gx, gy) {
+      const img = new Image();
+      img.src = spriteImages[type];
+
+      img.onload = () => {
+        const sprite = new Konva.Image({
+          id: `cell-${gx}-${gy}`,
+          x: gx * CELL_SIZE,
+          y: gy * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE,
+          image: img,
+          zIndex: zCounter++
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+
+        sprite.to({
+          scaleX: 1,
+          scaleY: 1,
+          duration: 0.15,
+          easing: Konva.Easings.EaseOut
+        });
+
+        itemLayer.draw();
+      };
+    }
+
+    function deleteSprite(gx, gy) {
+      const sprite = itemLayer.findOne(`#cell-${gx}-${gy}`);
+      if (!sprite) return;
+
+      sprite.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          sprite.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+    }
+
+    // ------------------------- CLICK HANDLER -------------------------
+    function handleGridClick() {
+      const pos = stage.getPointerPosition();
+      const gx = Math.floor(pos.x / CELL_SIZE);
+      const gy = Math.floor(pos.y / CELL_SIZE);
+
+      if (selectedTool === "erase") {
+        deleteSprite(gx, gy);
+        return;
+      }
+
+      if (selectedTool === "pick") {
+        const existing = itemLayer.findOne(`#cell-${gx}-${gy}`);
+        if (existing) {
+          const src = existing.image().src;
+          const type = Object.keys(spriteImages)
+            .find(key => spriteImages[key].includes(src.split("/").pop()));
+
+          if (type) {
+            clearSelectedItem();
+            selectedType = type;
+            document.querySelector(`[data-type="${type}"]`).classList.add("selected");
+          }
+        }
+        return;
+      }
+
+      if (selectedType) {
+        deleteSprite(gx, gy);
+        placeSprite(selectedType, gx, gy);
+      }
+    }
+
+    // Allow clicking anywhere on the canvas
+    bgLayer.on("click", handleGridClick);
+    itemLayer.on("click", handleGridClick);
+  </script>
+</body>
+</html>

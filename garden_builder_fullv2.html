@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+    #tools {
+      display: flex;
+      gap: 5px;
+    }
+    #stage-container { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Tools</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase">🧹</div>
+      <div class="tool" data-tool="pick">👆</div>
+      <!--<div class="tool" data-tool="rotate">🔄</div>-->
+    </div>
+
+    <h3>Elements</h3>
+    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
+    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
+    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
+    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
+    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
+    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
+    <!--<div class="item" data-type="water"><img src="water.png" width="40"></div>-->
+  </div>
+  
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 15;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+
+    const grassTiles = [
+    'assets/grass1.png',
+    'assets/grass2.png',
+    'assets/grass3.png',
+    'assets/grass4.png'
+    ];
+
+    const stage = new Konva.Stage({ container: 'stage-container', width, height });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // Draw background grass tiles
+    const grassImg = new Image();
+    grassImg.src = 'assets/grass.png';
+    grassImg.onload = () => {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const tile = new Konva.Image({
+            x: x * CELL_SIZE,
+            y: y * CELL_SIZE,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+            image: grassImg
+          });
+          bgLayer.add(tile);
+        }
+      }
+      bgLayer.draw();
+    };
+
+    let selectedType = null;
+    let selectedTool = null;
+    let zCounter = 1;
+
+    function clearSelectedUItool() {
+      document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+    }
+
+    function clearSelectedUIitem() {
+      document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    }
+
+    document.querySelectorAll('.tool').forEach((el) => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.getAttribute('data-tool');
+        selectedType = null;
+      });
+    });
+
+    document.querySelectorAll('.item').forEach((el) => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.add('selected');
+        selectedType = el.getAttribute('data-type');
+        selectedTool = null;
+      });
+    });
+
+    const spriteImages = {
+      tree1: 'assets/tree1.png',
+      tree2: 'assets/tree2.png',
+      tree3: 'assets/tree3.png',
+      bush1: 'assets/bush1.png',
+      bush2: 'assets/bush2.png',
+      bush3: 'assets/bush3.png',
+      /*water: 'water.png',*/
+    };
+
+    function placeSprite(type, gridX, gridY) {
+      const img = new Image();
+      img.src = spriteImages[type];
+      img.onload = () => {
+        const sprite = new Konva.Image({
+          id: `cell-${gridX}-${gridY}`,
+          x: gridX * CELL_SIZE,
+          y: gridY * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE,
+          image: img,
+          draggable: false,
+          rotation: 0,
+          zIndex: zCounter++
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+
+        sprite.to({ scaleX: 1, scaleY: 1, duration: 0.15, easing: Konva.Easings.EaseOut });
+
+        itemLayer.draw();
+      };
+    }
+
+    function deleteSprite(gridX, gridY) {
+      const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+      if (!existing) return;
+
+      existing.to({ scaleX: 0.1, scaleY: 0.1, duration: 0.15, onFinish: () => {
+        existing.destroy();
+        zCounter = Math.max(1, zCounter - 1);
+        itemLayer.draw();
+      }});
+    }
+
+    stage.on('click', (e) => {
+      const pos = stage.getPointerPosition();
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      if (selectedTool === 'erase') {
+        deleteSprite(gridX, gridY);
+        return;
+      }
+
+      if (selectedTool === 'pick') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          const type = Object.keys(spriteImages).find(t => spriteImages[t] === existing.image().src);
+          clearSelectedUIitem();
+          clearSelectedUItool();
+          selectedType = type;
+          document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        }
+        return;
+      }
+
+      if (selectedTool === 'rotate') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          existing.rotate(90);
+          itemLayer.draw();
+        }
+        return;
+      }
+
+      if (selectedType) {
+        deleteSprite(gridX, gridY);
+        placeSprite(selectedType, gridX, gridY);
+      }
+    });
+  </script>
+</body>
+</html>

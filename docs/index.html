@@ -60,7 +60,7 @@
     const CELL_SIZE = 32;
     const width = GRID_SIZE * CELL_SIZE;
     const height = GRID_SIZE * CELL_SIZE;
-
+    
     const grassTiles = [
       'assets/grass1.png',
       'assets/grass2.png',
@@ -79,14 +79,20 @@
     stage.add(bgLayer);
     stage.add(itemLayer);
 
-    // Multi-tile size definitions
+    // BOT stuff
+    const BOT_FOLLOW_CHANCE = 0.9;
+
+    let lastHumanAction = null; // { type, x, y }
+    let placedSprites = [];     // track placements 
+
+    // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
     const spriteSizes = {
-      tree1: { w: 2, h: 2 },
-      tree2: { w: 2, h: 2 },
-      tree3: { w: 2, h: 3 },
-      bush1: { w: 1, h: 1 },
-      bush2: { w: 1, h: 1 },
-      bush3: { w: 1, h: 1 },
+      tree1: { w: 2, h: 2, c: 1},
+      tree2: { w: 2, h: 2, c: 1},
+      tree3: { w: 2, h: 3, c: 1},
+      bush1: { w: 1, h: 1, c: 2},
+      bush2: { w: 1, h: 1, c: 2},
+      bush3: { w: 1, h: 1, c: 2 },
     };
 
     // Grass background
@@ -153,14 +159,48 @@
     };
 
     // ---------- MULTI-TILE PLACEMENT ----------
-    function placeSprite(type, gridX, gridY) {
+    // function placeSprite(type, gridX, gridY) {
+    //   const img = new Image();
+    //   img.src = spriteImages[type];
+      
+    //   // 'wat' is pointer to element size and category
+    //   img.onload = () => {
+    //     const wat = spriteSizes[type];
+    //     const widthPx = wat.w * CELL_SIZE;
+    //     const heightPx = wat.h * CELL_SIZE;
+
+    //     const sprite = new Konva.Image({
+    //       id: `cell-${gridX}-${gridY}`,
+    //       x: gridX * CELL_SIZE,
+    //       y: gridY * CELL_SIZE,
+    //       width: widthPx,
+    //       height: heightPx,
+    //       image: img,
+    //       draggable: false,
+    //       zIndex: zCounter++
+    //     });
+
+    //     sprite.scale({ x: 0.1, y: 0.1 });
+    //     itemLayer.add(sprite);
+
+    //     sprite.to({
+    //       scaleX: 1,
+    //       scaleY: 1,
+    //       duration: 0.15,
+    //       easing: Konva.Easings.EaseOut
+    //     });
+
+    //     itemLayer.draw();
+    //   };
+    // }
+    function placeSprite(type, gridX, gridY, isBot = false) {
       const img = new Image();
       img.src = spriteImages[type];
 
       img.onload = () => {
-        const size = spriteSizes[type];
-        const widthPx = size.w * CELL_SIZE;
-        const heightPx = size.h * CELL_SIZE;
+        const wat = spriteSizes[type];
+        const widthPx = wat.w * CELL_SIZE;
+        const heightPx = wat.h * CELL_SIZE;
 
         const sprite = new Konva.Image({
           id: `cell-${gridX}-${gridY}`,
@@ -184,26 +224,133 @@
         });
 
         itemLayer.draw();
+
+        // track placement
+        placedSprites.push({
+          type,
+          x: gridX,
+          y: gridY,
+          w: wat.w,
+          h: wat.h,
+          sprite
+        });
+
+        // only track HUMAN actions
+        if (!isBot) {
+          lastHumanAction = { type, x: gridX, y: gridY };
+          triggerBot();
+        }
       };
     }
 
-    function deleteSprite(gridX, gridY) {
-      // match any sprite occupying the top-left tile (only how we store them)
-      const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
-      if (!existing) return;
+    // function deleteSprite(gridX, gridY) {
+    //   // match any sprite occupying the top-left tile (only how we store them)
+    //   const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+    //   if (!existing) return;
 
-      existing.to({
+    //   existing.to({
+    //     scaleX: 0.1,
+    //     scaleY: 0.1,
+    //     duration: 0.15,
+    //     onFinish: () => {
+    //       existing.destroy();
+    //       zCounter = Math.max(1, zCounter - 1);
+    //       itemLayer.draw();
+    //     }
+    //   });
+    // }
+    function deleteSprite(gridX, gridY, isBot = false) {
+      const index = placedSprites.findIndex(p => p.x === gridX && p.y === gridY);
+      if (index === -1) return;
+
+      const obj = placedSprites[index];
+
+      obj.sprite.to({
         scaleX: 0.1,
         scaleY: 0.1,
         duration: 0.15,
         onFinish: () => {
-          existing.destroy();
+          obj.sprite.destroy();
           zCounter = Math.max(1, zCounter - 1);
           itemLayer.draw();
         }
       });
+
+      placedSprites.splice(index, 1);
+
+      if (!isBot) {
+        lastHumanAction = { delete: true, x: gridX, y: gridY };
+        triggerBot();
+      }
     }
 
+    function triggerBot() {
+      const delayOptions = [500, 750, 1000];
+      const delay = delayOptions[Math.floor(Math.random() * delayOptions.length)];
+
+      setTimeout(() => runBot(), delay);
+    }
+
+    function runBot() {
+      if (!lastHumanAction || lastHumanAction.delete) return;
+
+      const follow = Math.random() < BOT_FOLLOW_CHANCE;
+
+      if (follow) {
+        botFollow();
+      } else {
+        botRandom();
+      }
+    }
+
+    function botFollow() {
+      const { type, x, y } = lastHumanAction;
+      const category = spriteSizes[type].c;
+
+      // get all items in same category
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === category);
+
+      const botType = options[Math.floor(Math.random() * options.length)];
+
+      const directions = [
+        { dx: 1, dy: 0 },
+        { dx: -1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: 0, dy: -1 }
+      ];
+
+      const dir = directions[Math.floor(Math.random() * directions.length)];
+      const distance = Math.floor(Math.random() * 2) + 1; // 1 or 2
+
+      const nx = x + dir.dx * distance;
+      const ny = y + dir.dy * distance;
+
+      if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) return;
+
+      placeSprite(botType, nx, ny, true);
+    }
+
+    function botRandom() {
+      const doDelete = Math.random() < 0.5;
+
+      if (doDelete && placedSprites.length > 0) {
+        // delete last human item
+        deleteSprite(lastHumanAction.x, lastHumanAction.y, true);
+        return;
+      }
+
+      // place random different category
+      const categories = [...new Set(Object.values(spriteSizes).map(s => s.c))];
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory);
+      const type = options[Math.floor(Math.random() * options.length)];
+
+      const x = Math.floor(Math.random() * GRID_SIZE);
+      const y = Math.floor(Math.random() * GRID_SIZE);
+
+      placeSprite(type, x, y, true);
+    }
     // ---------- FIXED KONVA CLICK DETECTION ----------
     // Must set listening(true) and pointer-events must not be blocked
     bgLayer.listening(true);

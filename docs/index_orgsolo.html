@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+    #tools { display: flex; gap: 5px; }
+    #stage-container {
+      flex: 1;
+      cursor: url('assets/cursor-place.png') 16 16, auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Actie</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase"><img src="assets/cursor-erase.png" width="40"></div>
+      <div class="tool" data-tool="pick"><img src="assets/cursor-place.png" width="40"></div>
+    </div>
+
+    <h3>Elementen</h3>
+    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
+    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
+    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
+    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
+    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
+    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
+  </div>
+
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 25;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+    
+    const grassTiles = [
+      'assets/grass1.png',
+      'assets/grass2.png',
+      'assets/grass3.png',
+      'assets/grass4.png'
+    ];
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width,
+      height
+    });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // BOT stuff
+    const BOT_FOLLOW_CHANCE = 0.9;
+
+    let lastHumanAction = null; // { type, x, y }
+    let placedSprites = [];     // track placements 
+
+    const botCursor = new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: 10,
+      fill: 'rgba(0, 150, 255, 0.4)',
+      stroke: 'blue',
+      strokeWidth: 2,
+      visible: false
+    });
+
+    itemLayer.add(botCursor);
+
+    let botBusy = false;
+
+    // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
+    const spriteSizes = {
+      tree1: { w: 2, h: 2, c: 1},
+      tree2: { w: 2, h: 2, c: 1},
+      tree3: { w: 2, h: 3, c: 1},
+      bush1: { w: 1, h: 1, c: 2},
+      bush2: { w: 1, h: 1, c: 2},
+      bush3: { w: 1, h: 1, c: 2 },
+    };
+
+    // Grass background
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const img = new Image();
+        img.src = grassTiles[Math.floor(Math.random() * grassTiles.length)];
+
+        const tile = new Konva.Image({
+          x: x * CELL_SIZE,
+          y: y * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE
+        });
+
+        img.onload = () => {
+          tile.image(img);
+          bgLayer.draw();
+        };
+
+        bgLayer.add(tile);
+      }
+    }
+
+    let selectedType = null;
+    let selectedTool = null;
+    let zCounter = 1;
+
+    // No cross-clearing!
+    function clearSelectedUItool() {
+      document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+    }
+    function clearSelectedUIitem() {
+      document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    }
+
+    // Tool selection
+    document.querySelectorAll('.tool').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.dataset.tool;
+        selectedType = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // Item selection
+    document.querySelectorAll('.item').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.add('selected');
+        selectedType = el.dataset.type;
+        selectedTool = null; // logical only
+        updateCursor();
+      });
+    });
+
+    const spriteImages = {
+      tree1: 'assets/tree1.png',
+      tree2: 'assets/tree2.png',
+      tree3: 'assets/tree3.png',
+      bush1: 'assets/bush1.png',
+      bush2: 'assets/bush2.png',
+      bush3: 'assets/bush3.png',
+    };
+
+    // ---------- MULTI-TILE PLACEMENT ----------
+    function placeSprite(type, gridX, gridY, isBot = false) {
+      const img = new Image();
+      img.src = spriteImages[type];
+
+      img.onload = () => {
+        const wat = spriteSizes[type];
+        const widthPx = wat.w * CELL_SIZE;
+        const heightPx = wat.h * CELL_SIZE;
+
+        const sprite = new Konva.Image({
+          id: `cell-${gridX}-${gridY}`,
+          x: gridX * CELL_SIZE,
+          y: gridY * CELL_SIZE,
+          width: widthPx,
+          height: heightPx,
+          image: img,
+          draggable: false,
+          zIndex: zCounter++
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+
+        sprite.to({
+          scaleX: 1,
+          scaleY: 1,
+          duration: 0.15,
+          easing: Konva.Easings.EaseOut
+        });
+
+        itemLayer.draw();
+
+        // track placement
+        placedSprites.push({
+          type,
+          x: gridX,
+          y: gridY,
+          w: wat.w,
+          h: wat.h,
+          sprite
+        });
+
+        // only track HUMAN actions
+        if (!isBot) {
+          lastHumanAction = { type, x: gridX, y: gridY };
+          triggerBot();
+        }
+      };
+    }
+
+    function deleteSprite(gridX, gridY, isBot = false) {
+      const index = placedSprites.findIndex(p => p.x === gridX && p.y === gridY);
+      if (index === -1) return;
+
+      const obj = placedSprites[index];
+
+      obj.sprite.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          obj.sprite.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+
+      placedSprites.splice(index, 1);
+
+      if (!isBot) {
+        lastHumanAction = { delete: true, x: gridX, y: gridY };
+        triggerBot();
+      }
+    }
+
+    function triggerBot() {
+      const delayOptions = [750, 1000, 1250, 1500];
+      const delay = delayOptions[Math.floor(Math.random() * delayOptions.length)];
+
+      setTimeout(() => runBot(), delay);
+    }
+
+    function runBot() {
+      if (botBusy) return;
+      if (!lastHumanAction || lastHumanAction.delete) return;
+
+      botBusy = true;
+
+      const follow = Math.random() < BOT_FOLLOW_CHANCE;
+
+      if (follow) {
+        botFollow();
+      } else {
+        botRandom();
+      }
+    }
+
+    function botFollow() {
+      const { type, x, y } = lastHumanAction;
+      const category = spriteSizes[type].c;
+
+      // get all items in same category
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === category);
+
+      const botType = options[Math.floor(Math.random() * options.length)];
+
+      const directions = [
+        { dx: 1, dy: 0 },
+        { dx: -1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: 0, dy: -1 }
+      ];
+
+      const dir = directions[Math.floor(Math.random() * directions.length)];
+      const distance = Math.floor(Math.random() * 2) + 1; // 1 or 2
+
+      let attempts = 0;
+      let valid = false;
+
+      while (attempts < 5 && !valid) {
+        const nxTry = x + dir.dx * (Math.floor(Math.random() * 2) + 1);
+        const nyTry = y + dir.dy * (Math.floor(Math.random() * 2) + 1);
+
+        if (nxTry >= 0 && nyTry >= 0 && nxTry < GRID_SIZE && nyTry < GRID_SIZE) {
+          nx = nxTry;
+          ny = nyTry;
+          valid = true;
+        }
+
+        attempts++;
+      }
+
+      // fallback if still invalid
+      if (!valid) {
+        nx = Math.floor(Math.random() * GRID_SIZE);
+        ny = Math.floor(Math.random() * GRID_SIZE);
+      }
+
+      moveBotCursorTo(nx, ny, () => {placeSprite(botType, nx, ny, true);});
+    }
+
+    function botRandom() {
+      const doDelete = Math.random() < 0.5;
+
+      if (doDelete && placedSprites.length > 0) {
+        // delete last human item
+        moveBotCursorTo(lastHumanAction.x, lastHumanAction.y, () => {deleteSprite(lastHumanAction.x, lastHumanAction.y, true);});
+        return;
+      }
+
+      // place random different category
+      const categories = [...new Set(Object.values(spriteSizes).map(s => s.c))];
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory);
+      const type = options[Math.floor(Math.random() * options.length)];
+
+      const x = Math.floor(Math.random() * GRID_SIZE);
+      const y = Math.floor(Math.random() * GRID_SIZE);
+
+      moveBotCursorTo(x, y, () => {placeSprite(type, x, y, true);});
+    }
+
+    function moveBotCursorTo(gridX, gridY, callback) {
+      const targetX = gridX * CELL_SIZE + CELL_SIZE / 2;
+      const targetY = gridY * CELL_SIZE + CELL_SIZE / 2;
+
+      botCursor.visible(true);
+
+      // Move animation
+      botCursor.to({
+        x: targetX,
+        y: targetY,
+        duration: 0.5,
+        easing: Konva.Easings.EaseInOut,
+        onFinish: () => {
+
+          // Click animation (manual, not yoyo)
+          botCursor.to({
+            scaleX: 0.7,
+            scaleY: 0.7,
+            duration: 0.08,
+            onFinish: () => {
+
+              // restore scale
+              botCursor.scale({ x: 1, y: 1 });
+
+              botCursor.visible(false);
+              // 🔑 ALWAYS call callback
+              if (callback) callback();
+
+              botBusy = false;
+            }
+          });
+
+        }
+      });
+    }
+    // ---------- FIXED KONVA CLICK DETECTION ----------
+    // Must set listening(true) and pointer-events must not be blocked
+    bgLayer.listening(true);
+    itemLayer.listening(true);
+    stage.listening(true);
+
+    stage.on('pointerdown', () => {
+      const pos = stage.getPointerPosition();
+      if (!pos) return; // safety
+
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Tool: erase
+      if (selectedTool === 'erase') {
+        deleteSprite(gridX, gridY);
+        return;
+      }
+
+      // Tool: pick
+      if (selectedTool === 'pick') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          const src = existing.image().src;
+          const type = Object.keys(spriteImages).find(t => spriteImages[t] === src);
+
+          if (type) {
+            clearSelectedUIitem();
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            selectedType = type;
+          }
+        }
+        return;
+      }
+
+      // Placement mode
+      if (selectedType) {
+        deleteSprite(gridX, gridY);
+        placeSprite(selectedType, gridX, gridY);
+      }
+    });
+
+    function updateCursor() {
+      const container = document.getElementById('stage-container');
+
+      if (selectedTool === 'erase') {
+        container.style.cursor = "url('assets/cursor-erase.png') 16 16, auto";
+      } else {
+        container.style.cursor = "url('assets/cursor-place.png') 16 16, auto";
+      }
+    }
+  </script>
+</body>
+</html>

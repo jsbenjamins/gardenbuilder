@@ -1,0 +1,177 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Autotile Demo</title>
+<style>
+  body {
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  canvas {
+    image-rendering: pixelated;
+    border: 2px solid #555;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="512" height="512"></canvas>
+
+<script>
+const TILE_SIZE = 32;
+const MARGIN = 4;
+const SPACING = 8;
+
+const MAP_W = 16;
+const MAP_H = 16;
+
+const DEBUG = true;
+
+// 0 = empty, 1 = path
+const map = Array.from({ length: MAP_H }, () =>
+  Array(MAP_W).fill(0)
+);
+
+// Load your tileset image
+const img = new Image();
+img.src = "paths.png"; // <-- PUT YOUR IMAGE HERE
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Bitmask → tile coordinates (EDIT if needed)
+const TILEMAP = {
+  // isolated
+  0:  { x: 5, y: 2 },
+
+  // ends
+  1:  { x: 7, y: 1 }, // up
+  2:  { x: 6, y: 2 }, // right
+  4:  { x: 7, y: 2 }, // down
+  8:  { x: 6, y: 1 }, // left
+
+  // corners
+  3:  { x: 5, y: 1 }, // up-right
+  6:  { x: 5, y: 3 }, // down-right
+  12: { x: 4, y: 3 }, // down-left
+  9:  { x: 4, y: 1 }, // up-left
+
+  // straights
+  5:  { x: 8, y: 1 }, // vertical
+  10: { x: 7, y: 4 }, // horizontal
+
+  // T junctions
+  7:  { x: 5, y: 0 }, // T (missing up)
+  11: { x: 6, y: 3 }, // T (missing right)
+  13: { x: 4, y: 0 }, // T (missing left)
+  14: { x: 5, y: 3 }, // T (missing down)
+
+  // cross
+  15: { x: 5, y: 2 }
+};
+
+function getNeighbors(x, y) {
+  return {
+    up:    map[y-1]?.[x] === 1,
+    right: map[y]?.[x+1] === 1,
+    down:  map[y+1]?.[x] === 1,
+    left:  map[y]?.[x-1] === 1
+  };
+}
+
+function getBitmask(n) {
+  let mask = 0;
+  if (n.up) mask |= 1;
+  if (n.right) mask |= 2;
+  if (n.down) mask |= 4;
+  if (n.left) mask |= 8;
+  return mask;
+}
+
+function getSource(x, y) {
+  const sx = MARGIN + x * (TILE_SIZE + SPACING);
+  const sy = MARGIN + y * (TILE_SIZE + SPACING);
+  return { sx, sy };
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (DEBUG) {
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+
+        const sx = MARGIN + x * (TILE_SIZE + SPACING);
+        const sy = MARGIN + y * (TILE_SIZE + SPACING);
+
+        const dx = x * TILE_SIZE;
+        const dy = y * TILE_SIZE;
+
+        ctx.drawImage(
+          img,
+          sx, sy, TILE_SIZE, TILE_SIZE,
+          dx,
+          dy,
+          TILE_SIZE,
+          TILE_SIZE
+        );
+
+        ctx.fillStyle = "red";
+        ctx.font = "10px monospace";
+        ctx.fillText(`${x},${y}`, dx + 2, dy + 10);
+
+        ctx.strokeStyle = "cyan";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(dx, dy, TILE_SIZE, TILE_SIZE);
+      }
+    }
+    return;
+  }
+
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (map[y][x] !== 1) continue;
+
+      const neighbors = getNeighbors(x, y);
+      const mask = getBitmask(neighbors);
+      const tile = TILEMAP[mask];
+
+      if (!tile) continue;
+
+      const { sx, sy } = getSource(tile.x, tile.y);
+
+      ctx.drawImage(
+        img,
+        sx, sy, TILE_SIZE, TILE_SIZE,
+        x * TILE_SIZE,
+        y * TILE_SIZE,
+        TILE_SIZE,
+        TILE_SIZE
+      );
+    }
+  }
+}
+
+// Click to toggle tiles
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+  const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+
+  map[y][x] = map[y][x] === 1 ? 0 : 1;
+  draw();
+});
+
+// Draw once image loads
+img.onload = () => {
+  draw();
+};
+</script>
+
+</body>
+</html>

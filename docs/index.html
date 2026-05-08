@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Garden Builder</title>
+  <title>Park Game UU</title>
   <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
   <style>
     body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
@@ -32,6 +32,20 @@
       border-color: #4caf50;
       box-shadow: 0 0 5px #4caf50;
     }
+    .botplayer {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgb(120, 145, 85);
+      font-size: 32px;
+      border-color: #ff0000;
+      box-shadow: 0 0 5px #c70b0b;
+    }
     #tools { display: flex; gap: 5px; }
     #stage-container {
       flex: 1;
@@ -41,23 +55,70 @@
 </head>
 <body>
   <div id="sidebar">
-    <h3>Actie</h3>
+    <h3>Acties en <font color="red">bouwmaatje</font></h3>
     <div id="tools">
-      <div class="tool" data-tool="erase"><img src="assets/cursor-erase-human.png" width="40"></div>
-      <div class="tool" data-tool="pick"><img src="assets/cursor-place-human.png" width="40"></div>
+      <div class="tool" data-tool="erase"><img src="assets/cursor-erase-human.png" width="40" alt="verwijder element"></div>
+      <div class="tool selected" data-tool="pick"><img src="assets/cursor-place-human.png" width="40" alt="plaats element"></div>
+      <div class="botplayer"><img src="assets/otherplayer.png" width="40" alt="remote player"></div>
     </div>
 
     <h3>Elementen</h3>
-    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
-    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
-    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
-    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
-    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
-    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
-    <div class="item" data-type="path"><img src="assets/path/openNS.png" width="40"></div>
-    <div class="item" data-type="fun1"><img src="assets/funel/fountain.png" width="40"></div>
-    <div class="item" data-type="fun2"><img src="assets/funel/benchS.png" width="40"></div>
-    <div class="item" data-type="fun3"><img src="assets/funel/pzoo.png" width="40"></div>
+    <table id="elements-grid" border="0">
+      <tbody>
+        <tr>
+          <td><div class="item" data-type="tree1"><img src="assets/tree1.png" width="40" alt="boom 1"></div></td>
+          <td><div class="item" data-type="tree2"><img src="assets/tree2.png" width="40" alt="boom 2"></div></td>
+          <td><div class="item" data-type="tree3"><img src="assets/tree3.png" width="40" alt="boom 3"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="bush1"><img src="assets/bush1.png" width="40" alt="struik 1"></div></td>
+          <td><div class="item" data-type="bush2"><img src="assets/bush2.png" width="40" alt="struik 2"></div></td>
+          <td><div class="item" data-type="bush3"><img src="assets/bush3.png" width="40" alt="struik 3"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="flbed1"><img src="assets/bluefl.png" width="40" alt="bloem blauw"></div></td>
+          <td><div class="item" data-type="flbed2"><img src="assets/redfl.png" width="40" alt="bloem rood"></div></td>
+          <td><div class="item" data-type="flbed3"><img src="assets/yellowfl.png" width="40" alt="bloem geel"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="path"><img src="assets/funelprev/path.png" width="40" alt="zandpad"></div></td>
+          <td><div class="item" data-type="fun7"><img src="assets/funelprev/fountain.png" width="40" alt="fontein"></div></td>
+          <td><div class="item" data-type="fun11"><img src="assets/funelprev/statue.png" width="40" alt="standbeeld"></div></td>         
+        </tr>
+        <tr>
+          <td><div class="item" data-type="rot4"><img src="assets/funelprev/benchW.png" width="40" alt="bankje W"></div></td>
+          <td><div class="item" data-type="rot1"><img src="assets/funelprev/benchN.png" width="40" alt="bankje N"></div></td>
+          <td><div class="item" data-type="fun2"><img src="assets/funelprev/cartE.png" width="40"  alt="foodtruck 1"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="rot3"><img src="assets/funelprev/benchS.png" width="40" alt="bankje Z"></div></td>
+          <td><div class="item" data-type="rot2"><img src="assets/funelprev/benchE.png" width="40" alt="bankje O"></div></td>
+          <td><div class="item" data-type="fun3"><img src="assets/funelprev/cartW.png" width="40"  alt="foodtruck 2"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="fun9"><img src="assets/funelprev/pzoo.png" width="40" alt="kinderboerderij"></div></td>
+          <td><div class="item" data-type="fun6"><img src="assets/funelprev/dpond.png" width="40"  alt="eendenvijver"></div></td>          
+          <td><div class="item" data-type="fun4"><img src="assets/funelprev/ccourt.png" width="40"  alt="koffietent"></div></td>
+        </tr>
+        <tr>   
+          <td><div class="item" data-type="fun8"><img src="assets/funelprev/hpipe.png" width="40" alt="halfpipe"></div></td>       
+          <td><div class="item" data-type="fun10"><img src="assets/funelprev/soccer.png" width="40" alt="voetbalveld"></div></td>
+          <td><div class="item" data-type="fun1"><img src="assets/funelprev/bcourt.png" width="40"  alt="basketbalveld"></div></td>
+          
+        </tr>
+        <tr>
+          <td><div class="item" data-type="fun14"><img src="assets/funelprev/slideE.png" width="40"  alt="glijbaan blauw"></div></td>
+          <td><div class="item" data-type="fun12"><img src="assets/funelprev/swing.png" width="40" alt="schommel"></div></td>
+          <td><div class="item" data-type="fun13"><img src="assets/funelprev/wip.png" width="40" alt="wipwap"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="fun15"><img src="assets/funelprev/slideW.png" width="40" alt="glijbaan roze"></div></td>
+          <td><div class="item" data-type="fun5"><img src="assets/funelprev/chess.png" width="40" alt="schaaktafel"></div></td>        
+          <td></td> <!-- empty cell (29th element layout) -->
+        </tr>
+      </tbody>
+    </table>
+    
   </div>
 
   <div id="stage-container"></div>
@@ -86,8 +147,21 @@
     stage.add(bgLayer);
     stage.add(itemLayer);
 
+    const previewRect = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      fill: 'green',
+      opacity: 0.3,
+      visible: false,
+      listening: false
+    });
+
+    itemLayer.add(previewRect);
+
     // BOT stuff
-    const BOT_FOLLOW_CHANCE = 0.0;
+    const BOT_FOLLOW_CHANCE = 0.8;
 
     let lastHumanAction = null; // { type, x, y }
     let placedSprites = [];     // track placements 
@@ -99,9 +173,11 @@
     let selectedTool = null;
     let zCounter = 1;
     let lastTurnWasRecent = false; // path drawing behavior
+    const placedUniqueFun = new Set(); // keep track of already placed fun items
 
     const BOT_SYMMETRY_STRENGTH = 1.0; // 0 → off, 2 → very strong
 
+    // bot cursor
     const botPlaceCursor = new Konva.Image({
       x: 0,
       y: 0,
@@ -147,17 +223,40 @@
 
     // set bot to not busy at start
     let botBusy = false;
-
+  
     const spriteImages = {
       tree1: 'assets/tree1.png',
       tree2: 'assets/tree2.png',
       tree3: 'assets/tree3.png',
+
       bush1: 'assets/bush1.png',
       bush2: 'assets/bush2.png',
       bush3: 'assets/bush3.png',
-      fun1: 'assets/funel/fountain.png',
-      fun2: 'assets/funel/benchS.png',
-      fun3: 'assets/funel/pzoo.png',
+      
+      flbed1: 'assets/bluefl.png',
+      flbed2: 'assets/redfl.png',
+      flbed3: 'assets/yellowfl.png',
+
+      fun1: 'assets/funel/bcourt.png',
+      fun2: 'assets/funel/cartE.png',
+      fun3: 'assets/funel/cartW.png',
+      fun4: 'assets/funel/ccourt.png',
+      fun5: 'assets/funel/chess.png',
+      fun6: 'assets/funel/dpond.png',
+      fun7: 'assets/funel/fountain.png',
+      fun8: 'assets/funel/hpipe.png',
+      fun9: 'assets/funel/pzoo.png',
+      fun10: 'assets/funel/soccer.png',
+      fun11: 'assets/funel/statue.png',
+      fun12: 'assets/funel/swing.png',
+      fun13: 'assets/funel/wip.png',
+      fun14: 'assets/funel/slideE.png',
+      fun15: 'assets/funel/slideW.png',
+
+      rot1: 'assets/funel/benchN.png',
+      rot2: 'assets/funel/benchE.png',
+      rot3: 'assets/funel/benchS.png',
+      rot4: 'assets/funel/benchW.png',
     };
 
     // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
@@ -165,13 +264,38 @@
       tree1: { w: 2, h: 2, c: 1},
       tree2: { w: 2, h: 2, c: 1},
       tree3: { w: 2, h: 3, c: 1},
+
       bush1: { w: 1, h: 1, c: 2},
       bush2: { w: 1, h: 1, c: 2},
       bush3: { w: 1, h: 1, c: 2 },
-      path: { w: 1, h: 1, c: 3 },
-      fun1: { w: 2, h: 2, c: 4 },
-      fun2: { w: 2, h: 1, c: 4 },
-      fun3: { w: 6, h: 4, c: 4 },
+
+      flbed1: { w: 2, h: 2, c: 3},
+      flbed2: { w: 2, h: 2, c: 3},
+      flbed3: { w: 2, h: 2, c: 3 },
+         
+      fun1: { w: 4, h: 6, c: 4 },
+      fun2: { w: 3, h: 3, c: 4 },
+      fun3: { w: 3, h: 3, c: 4 },
+      fun4: { w: 8, h: 6, c: 4 },
+      fun5: { w: 3, h: 3, c: 4 },
+      fun6: { w: 4, h: 3, c: 4 },
+      fun7: { w: 2, h: 2, c: 4 },
+      fun8: { w: 5, h: 4, c: 4 },
+      fun9: { w: 6, h: 4, c: 4 },
+      fun10: { w: 15, h: 8, c: 4 },
+      fun11: { w: 1, h: 2, c: 4 },
+      fun12: { w: 3, h: 3, c: 4 },
+      fun13: { w: 3, h: 2, c: 4 },
+      fun14: { w: 3, h: 3, c: 4 },
+      fun15: { w: 3, h: 3, c: 4 },
+
+      rot1: { w: 2, h: 1, c: 5 },
+      rot2: { w: 1, h: 2, c: 5 },
+      rot3: { w: 2, h: 1, c: 5 },
+      rot4: { w: 1, h: 2, c: 5 },
+      
+
+      path: { w: 1, h: 1, c: 6 },
     };
 
     // ---------- PATH SYSTEM ----------
@@ -388,6 +512,20 @@
 
       // 5. bot trigger
       if (!isBot) {
+        // --- PATH TRACKING ---
+        if (lastPathTile) {
+          const dx = x - lastPathTile.x;
+          const dy = y - lastPathTile.y;
+
+          if (Math.abs(dx) + Math.abs(dy) === 1) {
+            currentPathDirection = { dx, dy };
+          } else {
+            currentPathDirection = null; // break chain
+          }
+        }
+        lastPathTile = { x, y };
+
+        // --- NORMAL BOT TRIGGER ---
         lastHumanAction = { type, x, y };
         triggerBot();
       }
@@ -571,7 +709,14 @@
 
     // ---------- MULTI-TILE PLACEMENT ----------
     function placeSprite(type, gridX, gridY, isBot = false) {
-      // check whether gird cell is already occupied
+      const cat = spriteSizes[type].c;
+
+      // category 4 restriction (except fun7 + fun11)
+      if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
+        if (placedUniqueFun.has(type)) return;
+      }
+
+      // check whether grid cell is already occupied
       if (!canPlace(type, gridX, gridY)) return;
 
       const img = new Image();
@@ -615,6 +760,17 @@
           sprite
         });
 
+        // disable button for fun item after placing, except fountainand statue
+        if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
+          placedUniqueFun.add(type);
+
+          const btn = document.querySelector(`[data-type="${type}"]`);
+          if (btn) {
+            btn.style.opacity = "0.3";
+            btn.style.pointerEvents = "none";
+          }
+        }
+
         // only track HUMAN actions
         if (!isBot) {
           lastHumanAction = { type, x: gridX, y: gridY };
@@ -623,11 +779,21 @@
       };
     }
 
+    // delete function, anywher on item works
     function deleteSprite(gridX, gridY, isBot = false) {
-      const index = placedSprites.findIndex(p => p.x === gridX && p.y === gridY);
+      // find ANY object covering this tile (not just top-left)
+      const index = placedSprites.findIndex(p =>
+        gridX >= p.x &&
+        gridX < p.x + p.w &&
+        gridY >= p.y &&
+        gridY < p.y + p.h
+      );
+
       if (index === -1) return;
 
       const obj = placedSprites[index];
+      const type = obj.type;
+      const cat = spriteSizes[type].c;
 
       obj.sprite.to({
         scaleX: 0.1,
@@ -641,6 +807,17 @@
       });
 
       placedSprites.splice(index, 1);
+
+      // re-enable category 4 button
+      if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
+        placedUniqueFun.delete(type);
+
+        const btn = document.querySelector(`[data-type="${type}"]`);
+        if (btn) {
+          btn.style.opacity = "1";
+          btn.style.pointerEvents = "auto";
+        }
+      }
 
       if (!isBot) {
         lastHumanAction = { delete: true, x: gridX, y: gridY };
@@ -682,6 +859,18 @@
         return botFollowPath();
       }
 
+      // do NOT follow fun (4) or benches (5)
+      if (category === 4 || category === 5) {
+        botRandom();
+        // fallback safety (only if botRandom didn't schedule anything)
+        if (botBusy) {
+          setTimeout(() => {
+            if (botBusy) botBusy = false;
+          }, 500);
+        }
+        return;
+      }
+      
       const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === category);
       const botType = options[Math.floor(Math.random() * options.length)];
 
@@ -699,23 +888,55 @@
 
     function botFollowPath() {
       console.log("reached botFollowPath");
-      if (!currentPathDirection || !lastPathTile) {
+
+      if (!currentPathDirection || !lastPathTile || !lastHumanAction) {
+        console.log("no direction");
         botBusy = false;
         return;
       }
 
-      const dir = currentPathDirection;
+      let dir = currentPathDirection;
 
-      const nx = lastPathTile.x + dir.dx;
-      const ny = lastPathTile.y + dir.dy;
+      // ---------- 1. RANDOM TURN ----------
+      const turnChance = 0.25;
 
-      // bounds
+      if (Math.random() < turnChance) {
+        const directions = [
+          { dx: 0, dy: -1 }, // N
+          { dx: 1, dy: 0 },  // E
+          { dx: 0, dy: 1 },  // S
+          { dx: -1, dy: 0 }  // W
+        ];
+
+        const opposite = { dx: -dir.dx, dy: -dir.dy };
+
+        const options = directions.filter(d =>
+          !(d.dx === opposite.dx && d.dy === opposite.dy)
+        );
+
+        dir = options[Math.floor(Math.random() * options.length)];
+        currentPathDirection = dir; // update direction after turn
+      }
+
+      // ---------- 2. FOLLOW HUMAN POSITION (instead of lastPathTile) ----------
+      const { x, y } = lastHumanAction;
+
+      const nx = x + dir.dx;
+      const ny = y + dir.dy;
+
+      // ---------- 3. BOUNDS CHECK ----------
       if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) {
         botBusy = false;
         return;
       }
 
-      // don't overwrite trees/bushes
+      // ---------- 4. STOP IF PATH ALREADY EXISTS ----------
+      if (pathTiles[key(nx, ny)]) {
+        botBusy = false;
+        return;
+      }
+
+      // ---------- 5. DON'T OVERWRITE OBJECTS ----------
       const blocked = placedSprites.some(p =>
         nx < p.x + p.w &&
         nx + 1 > p.x &&
@@ -728,36 +949,125 @@
         return;
       }
 
+      // ---------- 6. PLACE ----------
       moveBotCursorTo(nx, ny, 'place', 'path', () => {
-        placePath('path',nx, ny, true);
+        placePath('path', nx, ny, true);
+
+        // update tracking so chain continues naturally
+        lastPathTile = { x: nx, y: ny };
       });
     }
 
+    // new botRandom, deletes at 30% when not following, places nature, fountain or bench along path.
     function botRandom() {
-      const doDelete = Math.random() < 0.5;
+      const rand = Math.random();
 
-      if (doDelete && placedSprites.length > 0) {
-        moveBotCursorTo(lastHumanAction.x, lastHumanAction.y, 'delete', null, () => {
-          deleteSprite(lastHumanAction.x, lastHumanAction.y, true);
+      // ---------- 1. RANDOM DELETE (30% chance)
+      if (rand < 0.3 && placedSprites.length > 0) {
+
+        // allowed delete categories: 1,2,3,5 + fun7 (fountain) + fun11 (statue)
+        const deletable = placedSprites.filter(p => {
+          const c = spriteSizes[p.type].c;
+          return (
+            c === 1 || // trees
+            c === 2 || // bushes
+            c === 3 || // flowerbeds
+            c === 5 || // benches
+            p.type === 'fun7' || // fountain
+            p.type === 'fun11'   // statue
+          );
         });
+
+        if (deletable.length > 0) {
+          const target = deletable[Math.floor(Math.random() * deletable.length)];
+
+          // pick a random tile inside the object (works with your improved deleteSprite)
+          const tx = target.x + Math.floor(Math.random() * target.w);
+          const ty = target.y + Math.floor(Math.random() * target.h);
+
+          return moveBotCursorTo(tx, ty, 'delete', null, () => {
+            deleteSprite(tx, ty, true);
+          });
+        }
+      }
+
+      // ---------- 2. PLACE NATURE (trees, bushes, flowerbeds)
+      if (rand < 0.7) {
+        const options = Object.keys(spriteSizes).filter(t => {
+          const c = spriteSizes[t].c;
+          return c === 1 || c === 2 || c === 3;
+        });
+
+        for (let i = 0; i < 10; i++) {
+          const type = options[Math.floor(Math.random() * options.length)];
+          const x = Math.floor(Math.random() * GRID_SIZE);
+          const y = Math.floor(Math.random() * GRID_SIZE);
+
+          if (canPlace(type, x, y)) {
+            return moveBotCursorTo(x, y, 'place', type, () => {
+              placeSprite(type, x, y, true);
+            });
+          }
+        }
+      }
+
+      // ---------- 3. RANDOM FOUNTAIN
+      if (rand < 0.80) {
+        for (let i = 0; i < 10; i++) {
+          const x = Math.floor(Math.random() * GRID_SIZE);
+          const y = Math.floor(Math.random() * GRID_SIZE);
+
+          if (canPlace('fun7', x, y)) {
+            return moveBotCursorTo(x, y, 'place', 'fun7', () => {
+              placeSprite('fun7', x, y, true);
+            });
+          }
+        }
+      }
+
+      // ---------- 4. BENCH PLACEMENT ALONG PATH
+      const pathKeys = Object.keys(pathTiles);
+
+      if (pathKeys.length === 0) {
+        botBusy = false;
         return;
       }
 
-      const categories = [...new Set(Object.values(spriteSizes).map(s => s.c))];
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+      for (let i = 0; i < 20; i++) {
+        const k = pathKeys[Math.floor(Math.random() * pathKeys.length)];
+        const [x, y] = k.split('-').map(Number);
+        const conn = getConnections(x, y);
 
-      //const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory);
-      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory && t !== 'path');
+        // ---------- horizontal path → place N/S bench
+        if (conn.E && conn.W) {
+          const belowFree = canPlace('rot1', x, y + 1);
+          const aboveFree = canPlace('rot3', x, y - 1);
 
-      for (let i = 0; i < 10; i++) {
-        const type = options[Math.floor(Math.random() * options.length)];
-        const x = Math.floor(Math.random() * GRID_SIZE);
-        const y = Math.floor(Math.random() * GRID_SIZE);
+          if (Math.random() < 0.5 && belowFree) {
+            return moveBotCursorTo(x, y + 1, 'place', 'rot1', () => {
+              placeSprite('rot1', x, y + 1, true);
+            });
+          } else if (aboveFree) {
+            return moveBotCursorTo(x, y - 1, 'place', 'rot3', () => {
+              placeSprite('rot3', x, y - 1, true);
+            });
+          }
+        }
 
-        if (canPlace(type, x, y)) {
-          return moveBotCursorTo(x, y, 'place', type, () => {
-            placeSprite(type, x, y, true);
-          });
+        // ---------- vertical path → place E/W bench
+        if (conn.N && conn.S) {
+          const leftFree = canPlace('rot2', x - 1, y);
+          const rightFree = canPlace('rot4', x + 1, y);
+
+          if (Math.random() < 0.5 && leftFree) {
+            return moveBotCursorTo(x - 1, y, 'place', 'rot2', () => {
+              placeSprite('rot2', x - 1, y, true);
+            });
+          } else if (rightFree) {
+            return moveBotCursorTo(x + 1, y, 'place', 'rot4', () => {
+              placeSprite('rot4', x + 1, y, true);
+            });
+          }
         }
       }
 
@@ -867,18 +1177,47 @@
     itemLayer.listening(true);
     stage.listening(true);
 
+    // validity rectangle for item placement
+    stage.on('pointermove', () => {
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Only show for placement (not erase, not bot)
+      if (!selectedType || selectedTool === 'erase' || (spriteSizes[selectedType]?.c === 4 && selectedType !== 'fun7' && selectedType !== 'fun11' && placedUniqueFun.has(selectedType))) {
+        previewRect.visible(false);
+        itemLayer.draw();
+        return;
+      }
+
+      const size = spriteSizes[selectedType] || { w: 1, h: 1 };
+
+      previewRect.x(gridX * CELL_SIZE);
+      previewRect.y(gridY * CELL_SIZE);
+      previewRect.width(size.w * CELL_SIZE);
+      previewRect.height(size.h * CELL_SIZE);
+
+      // validity check
+      const valid = selectedType === 'path'
+        ? !createsSquare(gridX, gridY)
+        : canPlace(selectedType, gridX, gridY);
+
+      previewRect.fill(valid ? 'green' : 'red');
+      previewRect.visible(true);
+
+      itemLayer.batchDraw();
+    });
+
     stage.on('pointerdown', () => {
+      previewRect.visible(false);
       const pos = stage.getPointerPosition();
       if (!pos) return; // safety
 
       const gridX = Math.floor(pos.x / CELL_SIZE);
       const gridY = Math.floor(pos.y / CELL_SIZE);
 
-      // Tool: erase
-      // if (selectedTool === 'erase') {
-      //   deleteSprite(gridX, gridY);
-      //   return;
-      // }
       if (selectedTool === 'erase') {
         // try deleting path first
         if (pathTiles[key(gridX, gridY)]) {
@@ -921,6 +1260,11 @@
 
     function updateCursor() {
       const container = document.getElementById('stage-container');
+
+      if (!selectedType || selectedTool === 'erase') {
+        previewRect.visible(false);
+        itemLayer.draw();
+      }
 
       if (selectedTool === 'erase') {
         container.style.cursor = "url('assets/cursor-erase-human.png') 16 16, auto";

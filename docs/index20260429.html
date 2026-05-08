@@ -29,12 +29,8 @@
       font-size: 32px;
     }
     .selected {
-      border-color: rgb(255, 187, 0);
-      box-shadow: 0 0 5px #997700;
-    }
-    .bot-selected {
-      border-color: #0000ff;
-      box-shadow: 0 0 8px #000099;
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
     }
     .botplayer {
       width: 60px;
@@ -47,8 +43,8 @@
       cursor: pointer;
       background: rgb(120, 145, 85);
       font-size: 32px;
-      border-color: #0000ff;
-      box-shadow: 0 0 5px #000099;
+      border-color: #ff0000;
+      box-shadow: 0 0 5px #c70b0b;
     }
     #tools { display: flex; gap: 5px; }
     #stage-container {
@@ -59,7 +55,7 @@
 </head>
 <body>
   <div id="sidebar">
-    <h3>Acties en <font color="blue">bouwmaatje</font></h3>
+    <h3>Acties en <font color="red">bouwmaatje</font></h3>
     <div id="tools">
       <div class="tool" data-tool="erase"><img src="assets/cursor-erase-human.png" width="40" alt="verwijder element"></div>
       <div class="tool selected" data-tool="pick"><img src="assets/cursor-place-human.png" width="40" alt="plaats element"></div>
@@ -133,12 +129,6 @@
     const width = GRID_SIZE * CELL_SIZE;
     const height = GRID_SIZE * CELL_SIZE;
     
-    let currentTurn = 'human'; // 'human' | 'bot'
-    let turnNumber = 1;
-
-    const TURN_DELAY_MIN = 2000;
-    const TURN_DELAY_MAX = 5000;
-
     const grassTiles = [
       'assets/grass1.png',
       'assets/grass2.png',
@@ -168,36 +158,10 @@
       listening: false
     });
 
-    // human highlight last item
-    const humanHighlight = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: CELL_SIZE,
-      height: CELL_SIZE,
-      fill: 'rgb(255,187,0)',
-      opacity: 0.35,
-      visible: false,
-      listening: false
-    });
-
-    // bot highlight last item
-    const botHighlight = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: CELL_SIZE,
-      height: CELL_SIZE,
-      fill: 'blue',
-      opacity: 0.30,
-      visible: false,
-      listening: false
-    });
-    
-    itemLayer.add(humanHighlight);
-    itemLayer.add(botHighlight);
     itemLayer.add(previewRect);
 
     // BOT stuff
-    const BOT_FOLLOW_CHANCE = 1.01;
+    const BOT_FOLLOW_CHANCE = 0.8;
 
     let lastHumanAction = null; // { type, x, y }
     let placedSprites = [];     // track placements 
@@ -355,44 +319,6 @@
       openNWE: 'assets/path/openNWE.png',
       openA: 'assets/path/openA.png'
     };
-
-    // functions for taking turns
-    function endHumanTurn() {
-      currentTurn = 'bot';
-
-      const delay =
-        TURN_DELAY_MIN +
-        Math.random() * (TURN_DELAY_MAX - TURN_DELAY_MIN);
-
-      setTimeout(() => {
-        runBotTurn();
-      }, delay);
-      console.log("ending Human turn");
-    }
-
-    function endBotTurn() {
-      currentTurn = 'human';
-      turnNumber++;
-      console.log("ending Bot turn");
-      clearBotSelectTool();
-    }
-
-    // show turn history
-    function showHighlight(who, x, y, w = 1, h = 1) {
-      const target = who === 'human' ? humanHighlight : botHighlight;
-
-      target.x(x * CELL_SIZE);
-      target.y(y * CELL_SIZE);
-
-      target.width(w * CELL_SIZE);
-      target.height(h * CELL_SIZE);
-
-      target.visible(true);
-
-      target.zIndex(0);
-
-      itemLayer.draw();
-    }
 
     //needed for PATH drawing
     function key(x, y) {
@@ -601,11 +527,7 @@
 
         // --- NORMAL BOT TRIGGER ---
         lastHumanAction = { type, x, y };
-        showHighlight('human', x, y);
-        //triggerBot();
-        endHumanTurn();
-      } else {
-        showHighlight('bot', x, y);
+        triggerBot();
       }
     }
 
@@ -632,11 +554,7 @@
       // optional: bot tracking
       if (!isBot) {
         lastHumanAction = { delete: true, x, y };
-        //triggerBot();
-        endHumanTurn();
-        showHighlight('human', x, y);
-      } else {
-        showHighlight('bot', x, y);
+        triggerBot();
       }
     }
 
@@ -767,42 +685,6 @@
       document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
     }
 
-    // also show and clear bot selections
-    function clearBotSelectTool() {
-      document.querySelectorAll('.tool').forEach(el =>
-        el.classList.remove('bot-selected')
-      );
-    }
-    function clearBotSelectItem() {
-      document.querySelectorAll('.item').forEach(el =>
-        el.classList.remove('bot-selected')
-      );
-    }
-
-
-    function botSelectTool(toolName) {
-      clearBotSelectTool();
-      clearBotSelectItem();
-
-      const el = document.querySelector(
-        `.tool[data-tool="${toolName}"]`
-      );
-
-      if (el) {
-        el.classList.add('bot-selected');
-      }
-    }
-
-    function botSelectItem(type) {
-      const el = document.querySelector(
-        `.item[data-type="${type}"]`
-      );
-
-      if (el) {
-        el.classList.add('bot-selected');
-      }
-    }
-
     // Tool selection
     document.querySelectorAll('.tool').forEach(el => {
       el.addEventListener('click', () => {
@@ -818,7 +700,6 @@
     document.querySelectorAll('.item').forEach(el => {
       el.addEventListener('click', () => {
         clearSelectedUIitem();
-        el.classList.remove('bot-selected');
         el.classList.add('selected');
         selectedType = el.dataset.type;
         selectedTool = null; // logical only
@@ -877,7 +758,7 @@
           w: wat.w,
           h: wat.h,
           sprite
-        });        
+        });
 
         // disable button for fun item after placing, except fountainand statue
         if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
@@ -893,11 +774,7 @@
         // only track HUMAN actions
         if (!isBot) {
           lastHumanAction = { type, x: gridX, y: gridY };
-          //triggerBot();
-          endHumanTurn();
-          showHighlight('human', gridX, gridY, wat.w, wat.h);
-        } else {
-          showHighlight('bot', gridX, gridY, wat.w, wat.h);
+          triggerBot();
         }
       };
     }
@@ -944,15 +821,10 @@
 
       if (!isBot) {
         lastHumanAction = { delete: true, x: gridX, y: gridY };
-        //triggerBot();
-        endHumanTurn();
-        showHighlight('human', obj.x, obj.y, obj.w, obj.h);
-      } else {
-        showHighlight('bot', obj.x, obj.y, obj.w, obj.h);
+        triggerBot();
       }
     }
 
-    // this should not do anything anymore
     function triggerBot() {
       const delayOptions = [300, 450, 800, 1300];
       const delay = delayOptions[Math.floor(Math.random() * delayOptions.length)];
@@ -971,24 +843,6 @@
 
       if (follow) {
         console.log("following human");
-        botFollow();
-      } else {
-        botRandom();
-      }
-    }
-
-    function runBotTurn() {
-      if (botBusy) return;
-      if (!lastHumanAction) {
-        endBotTurn();
-        return;
-      }
-
-      botBusy = true;
-
-      const logicalFollow = Math.random() < BOT_FOLLOW_CHANCE;
-
-      if (logicalFollow) {
         botFollow();
       } else {
         botRandom();
@@ -1237,18 +1091,6 @@
       let cursor;
 
       if (mode === 'place') {
-        botSelectTool('pick');
-
-        if (type) {
-          botSelectItem(type);
-        }
-      }
-
-      if (mode === 'delete') {
-        botSelectTool('erase');
-      }
-
-      if (mode === 'place') {
         cursor = botPlaceCursor;
       } else {
         cursor = botDeleteCursor;
@@ -1314,7 +1156,6 @@
                           if (callback) callback();
 
                           botBusy = false;
-                          endBotTurn();
                         }
                       });
                     }
@@ -1370,7 +1211,6 @@
     });
 
     stage.on('pointerdown', () => {
-      if (currentTurn !== 'human') return;
       previewRect.visible(false);
       const pos = stage.getPointerPosition();
       if (!pos) return; // safety

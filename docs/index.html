@@ -13,6 +13,7 @@
       margin: 0; 
       display: flex; 
       height: 100vh;
+      background: #e2ffad;
       font-family: "Bitcount", system-ui;
       font-optical-sizing: auto;
       font-weight: 400;
@@ -25,12 +26,11 @@
     }  
     #sidebar {
       width: 300px;
-      background: #f3f3f3;
+      background: #e2ffad;
       padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     }
     .item, .tool {
       width: 60px;
@@ -52,18 +52,20 @@
       align-content: center;
     }
     .selected {
+      border: 4px solid;
       border-color: rgb(255, 187, 0);
-      box-shadow: 0 0 5px #997700;
+      /* box-shadow: 0 0 5px #997700; */
     }
     .bot-selected {
+      border: 4px solid;
       border-color: #0000ff;
-      box-shadow: 0 0 8px #000099;
+      /* box-shadow: 0 0 8px #000099; */
     }
     .botplayer {
       width: 60px;
       height: 60px;
       border-radius: 10px;
-      border: 2px solid;
+      border: 4px solid;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -71,7 +73,7 @@
       background: rgb(120, 145, 85);
       font-size: 32px;
       border-color: #0000ff;
-      box-shadow: 0 0 5px #000099;
+      /* box-shadow: 0 0 5px #000099; */
     }
     #tools { display: flex; gap: 5px; }
     #stage-container {

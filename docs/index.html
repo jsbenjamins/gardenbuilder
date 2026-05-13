@@ -4,9 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Park Game UU</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
   <style>
-    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    body { 
+      margin: 0; 
+      display: flex; 
+      height: 100vh;
+      font-family: "Bitcount", system-ui;
+      font-optical-sizing: auto;
+      font-weight: 400;
+      font-style: normal;
+      font-variation-settings:
+        "slnt" 0,
+        "CRSV" 0.5,
+        "ELSH" 0,
+        "ELXP" 0;
+    }  
     #sidebar {
       width: 300px;
       background: #f3f3f3;
@@ -27,6 +43,9 @@
       cursor: pointer;
       background: white;
       font-size: 32px;
+    }
+    h3 {
+      font-weight: 400;
     }
     #beurt {
       padding: 10px;

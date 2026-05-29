@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     body { 
       margin: 0; 
@@ -113,6 +114,77 @@
       z-index: 9999;
       white-space: nowrap;
     }
+
+    #game-timer {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 28px;
+      z-index: 5000;
+      letter-spacing: 1px;
+    }
+
+    #end-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    #end-box {
+      background: linear-gradient(
+        135deg,
+        #ffe066,
+        #ffb703,
+        #8ecae6,
+        #90be6d
+      );
+      border-radius: 28px;
+      padding: 50px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(0,0,0,0.35);
+      max-width: 700px;
+    }
+
+    #end-box h1 {
+      margin: 0 0 30px 0;
+      font-size: 56px;
+      line-height: 1.1;
+      color: white;
+      text-shadow:
+        3px 3px 0 rgba(0,0,0,0.25);
+      font-weight: 500;
+    }
+
+    #end-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    #end-buttons button {
+      font-family: "Bitcount", system-ui;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 24px;
+      cursor: pointer;
+      background: white;
+      color: black;
+      transition: transform 0.12s;
+    }
+
+    #end-buttons button:hover {
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -178,6 +250,20 @@
     </table>
     
   </div>
+
+  <div id="game-timer">01:00</div> <!-- 5:00 for real-->
+
+  <div id="end-overlay">
+    <div id="end-box">
+      <h1>Goed samengewerkt,<br>wat een leuk park!</h1>
+
+      <div id="end-buttons">
+        <button id="download-btn">Download je park</button>
+        <button id="survey-btn">Ga naar vragenlijst</button>
+      </div>
+    </div>
+  </div>
+
   <div id="tooltip"></div>
   <div id="stage-container"></div>
 
@@ -191,10 +277,16 @@
     let currentTurn = 'human'; // 'human' | 'bot'
     let turnNumber = 1;
 
-    const selectedAvatar = localStorage.getItem('playerAvatar');
+    let gameEnded = false;
 
-    const TURN_DELAY_MIN = 50;
-    const TURN_DELAY_MAX = 100;
+    const GAME_DURATION_SECONDS = 60; // 300 for real
+    let remainingSeconds = GAME_DURATION_SECONDS;
+
+    const selectedAvatar = localStorage.getItem('playerAvatar');
+    const otherAvatar = localStorage.getItem('otherAvatar');
+
+    const TURN_DELAY_MIN = 2000;
+    const TURN_DELAY_MAX = 5000;
 
     const grassTiles = [
       'assets/grass1.png',
@@ -449,7 +541,147 @@
 
     });
 
+    // ==== timer stuff
+    const timerEl = document.getElementById('game-timer');
+
+    function updateTimerUI() {
+      const min = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+      const sec = String(remainingSeconds % 60).padStart(2, '0');
+
+      timerEl.innerText = `${min}:${sec}`;
+    }
+
+    function startGameTimer() {
+      updateTimerUI();
+
+      const interval = setInterval(() => {
+
+        if (gameEnded) {
+          clearInterval(interval);
+          return;
+        }
+
+        remainingSeconds--;
+
+        updateTimerUI();
+
+        if (remainingSeconds <= 0) {
+          clearInterval(interval);
+          endGame();
+        }
+
+      }, 1000);
+    }
+
+    // END game function
+    function endGame() {
+
+      if (gameEnded) return;
+
+      gameEnded = true;
+
+      currentTurn = 'ended';
+
+      // hide previews/cursors
+      previewRect.visible(false);
+      pathPreview.visible(false);
+
+      botPlaceCursor.visible(false);
+      botDeleteCursor.visible(false);
+
+      highlightLayer.draw();
+      cursorLayer.draw();
+
+      // disable all clicks in sidebar
+      document.querySelectorAll('.item, .tool').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+
+      // export image BEFORE overlay appears
+      const dataURL = stage.toDataURL({
+        pixelRatio: 2
+      });
+
+      // show overlay
+      document.getElementById('end-overlay').style.display = 'flex';
+      launchConfetti();
+
+      // download button
+      document.getElementById('download-btn').onclick = () => {
+
+        const link = document.createElement('a');
+
+        link.download = 'mijn-park.png';
+        link.href = dataURL;
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+      };
+
+      // survey button
+      document.getElementById('survey-btn').onclick = () => {
+
+        window.open(
+          'https://survey.uu.nl/jfe/form/SV_37r9IxCfCtaY7m6',
+          '_blank'
+        );
+      };
+    }
+    function launchConfetti() {
+      // immediate burst
+      confetti({
+        particleCount: 180,
+        spread: 120,
+        origin: { y: 0.6 }
+      });
+
+      // left cannon
+      confetti({
+        particleCount: 120,
+        angle: 60,
+        spread: 90,
+        origin: { x: 0 }
+      });
+
+      // right cannon
+      confetti({
+        particleCount: 120,
+        angle: 120,
+        spread: 90,
+        origin: { x: 1 }
+      });
+
+      // continuous celebration
+      const duration = 4500;
+      const end = Date.now() + duration;
+
+      const interval = setInterval(() => {
+
+        if (Date.now() > end) {
+          clearInterval(interval);
+          return;
+        }
+
+        confetti({
+          particleCount: 18,
+          spread: 70,
+          startVelocity: 30,
+          origin: {
+            x: Math.random(),
+            y: Math.random() * 0.4
+          }
+        });
+
+      }, 180);
+    }
+    // ==== end timer stuff
+    
     buildGrass();
+    startGameTimer();
 
     // Building: grass background
     function buildGrass() {
@@ -496,7 +728,7 @@
 
         label.innerText = "Je bouwmaatje";
 
-        avatar.src = "assets/players/otherplayer01.png";
+        avatar.src = otherAvatar || "assets/players/otherplayer02.png";
         avatar.alt = "bouwmaatje";
 
         beurt.style.backgroundColor = 'rgb(0,0,255)';
@@ -1411,6 +1643,7 @@
     //   }
     // }
     function runBotTurn() {
+      if (gameEnded) return;
       if (botBusy) return;
 
       if (!lastHumanAction) {
@@ -2084,6 +2317,7 @@
     });
 
     stage.on('pointerdown', () => {
+      if (gameEnded) return;
       if (currentTurn !== 'human') return;
       previewRect.visible(false);
       const pos = stage.getPointerPosition();

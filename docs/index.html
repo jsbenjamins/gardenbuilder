@@ -7,8 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
 
   <style>
 
@@ -50,10 +49,12 @@
       border-radius: 12px;
     }
 
-    iframe {
+    #instructVideo {
       width: 100%;
       height: 100%;
-      border: none;
+      object-fit: cover;
+      display: block;
+      border-radius: 12px;
     }
 
     #avatars {
@@ -127,10 +128,20 @@
     <div id="video-wrapper">
 
       <!-- placeholder -->
-      <iframe
-        src="https://www.youtube.com/embed/XdjhiGoKHxs"
-        allowfullscreen>
-      </iframe>
+      <video
+        id="instructVideo"
+        controls
+        preload="metadata"
+        playsinline
+        poster="assets/video/poster.png"
+        controlslist="nodownload noplaybackrate"
+        disablepictureinpicture>
+
+        <source
+          src="assets/video/instruct.mp4"
+          type="video/mp4">
+
+      </video>
 
     </div>
 
@@ -162,11 +173,11 @@
 
     <div id="matchmaking">
       <div id="matchTitle">
-        Verbinden met server...
+        Verbinden met game...
       </div>
 
       <div id="status">
-        Een bouwmaatje zoeken...
+        ...
       </div>
     </div>
 
@@ -222,28 +233,66 @@
 
     function fakeMatchmaking() {
 
+      const botornot = Math.random() < -0.01; // -0.01 always 'human', 1.01 always bot
+
+      if (botornot) {
+          localStorage.setItem(
+          'otherAvatar',
+          "assets/players/otherplayer01.png");
+          console.log("bot player");
+      } else {
+          localStorage.setItem(
+          'otherAvatar',
+          "assets/players/player04.png");
+          console.log("'human' player");
+      }
+      
+      const stepTimes = [
+        Math.random()*500 +1600,
+        Math.random()*500 +1700,
+        Math.random()*500 +5200,
+        Math.random()*500 +1650,
+        Math.random()*500 +1800,
+        Math.random()*500 +1100,
+      ];
+
       const status =
         document.getElementById('status');
 
-      const steps = [
+      const stepsH = [
 
-        "Server verbinden...",
-        "Spel laden...",
+        "Verbinden met server...",
+        "Verbonden",
         "Bouwmaatje zoeken...",
         "Bouwmaatje gevonden!",
-        "Park voorbereiden...",
-        "Bouwmaatje wacht al..."
+        "Spel voorbereiden...",
+        "Spel staat klaar..."
+      ];
+
+      const stepsR = [
+
+        "Verbinden met server...",
+        "Verbonden",
+        "Bouwmaatje zoeken...",
+        "Geen bouwmaatje gevonden... gebruik robot",
+        "Spel voorbereiden...",
+        "Spel staat klaar..."
       ];
 
       let i = 0;
 
       const interval = setInterval(() => {
 
-        status.innerText = steps[i];
+        if (botornot) {
+          status.innerText = stepsR[i];
+        } else {
+          status.innerText = stepsH[i];
+        }
+        
 
         i++;
 
-        if (i >= steps.length) {
+        if (i >= stepsH.length || i >= stepsR.length) {
 
           clearInterval(interval);
 
@@ -252,10 +301,10 @@
             window.location.href =
               "game.html";
 
-          }, 1200);
+          }, Math.random()*500+700);
         }
 
-      }, 1400);
+      }, stepTimes[i]);
     }
 
   </script>

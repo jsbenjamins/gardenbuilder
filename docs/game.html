@@ -619,10 +619,31 @@
       });
 
       // export image BEFORE overlay appears
+      // temporarily hide overlays/highlights
+      humanHighlight.visible(false);
+      botHighlight.visible(false);
+      previewRect.visible(false);
+      pathPreview.visible(false);
+
+      botPlaceCursor.visible(false);
+      botDeleteCursor.visible(false);
+
+      highlightLayer.draw();
+      cursorLayer.draw();
+
+      // export clean image
       const dataURL = stage.toDataURL({
         pixelRatio: 2
       });
 
+      // restore visuals (optional since game ended,
+      // but keeps internal state clean)
+      humanHighlight.visible(true);
+      botHighlight.visible(true);
+
+      highlightLayer.draw();
+      cursorLayer.draw();
+      
       // show overlay
       document.getElementById('end-overlay').style.display = 'flex';
       launchConfetti();

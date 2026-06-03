@@ -1,0 +1,280 @@
+body { 
+    margin: 0; 
+    display: flex; 
+    height: 100vh;
+    background: #e2ffad;
+    font-family: "Bitcount", system-ui;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings:
+    "slnt" 0,
+    "CRSV" 0.5,
+    "ELSH" 0,
+    "ELXP" 0;
+}  
+#sidebar {
+    width: 300px;
+    background: #e2ffad;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.item, .tool {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: white;
+    font-size: 32px;
+}
+h3 {
+    font-weight: 400;
+}
+#beurt {
+    padding: 10px;
+    min-height: 64px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    font-size: 24px;
+    box-sizing: border-box;
+}
+
+#beurt .turn-avatar {
+    width: 64px;
+    height: 64px;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+    display: block;
+}
+
+#beurt .turn-label {
+    display: flex;
+    align-items: center;
+}
+.selected {
+    border: 4px solid;
+    border-color: rgb(255, 187, 0);
+    /* box-shadow: 0 0 5px #997700; */
+}
+.bot-selected {
+    border: 4px solid;
+    border-color: #0000ff;
+    /* box-shadow: 0 0 8px #000099; */
+}
+.botplayer {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    border: 4px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgb(120, 145, 85);
+    font-size: 32px;
+    border-color: #0000ff;
+    /* box-shadow: 0 0 5px #000099; */
+}
+#tools { display: flex; gap: 5px; }
+#stage-container {
+    flex: 1;
+    cursor: url('../assets/cursor-place-human.png') 16 16, auto;
+}
+#tooltip {
+    position: fixed;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 9999;
+    white-space: nowrap;
+}
+
+#game-timer {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    background: rgba(0,0,0,0.75);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 28px;
+    z-index: 5000;
+    letter-spacing: 1px;
+}
+
+#start-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0,0,0,0.45);
+
+    z-index: 9999;
+}
+
+#start-box {
+    background: linear-gradient(
+    135deg,
+    #ffe066,
+    #ffb703,
+    #8ecae6,
+    #90be6d
+    );
+
+    padding: 40px 50px;
+    border-radius: 24px;
+
+    max-width: 650px;
+    text-align: center;
+
+    animation: endPop 0.5s ease-out;
+}
+
+#start-box h1 {
+    margin: 0 0 24px 0;
+    font-size: 56px;
+    line-height: 1.1;
+    color: white;
+
+    text-shadow:
+      3px 3px 0 rgba(0,0,0,0.25);
+
+    font-weight: 500;
+}
+
+#start-box p {
+    color: white;
+    font-size: 24px;
+    line-height: 1.4;
+    margin: 0 0 30px 0;
+}
+
+#start-btn {
+    font-family: "Bitcount", system-ui;
+
+    border: none;
+    border-radius: 14px;
+
+    padding: 16px 32px;
+    font-size: 24px;
+
+    cursor: pointer;
+
+    background: white;
+    color: black;
+
+    transition: transform 0.12s;
+}
+
+#start-btn:hover {
+    transform: scale(1.05);
+}
+
+#end-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+#end-box {
+    background: linear-gradient(
+    135deg,
+    #ffe066,
+    #ffb703,
+    #8ecae6,
+    #90be6d
+    );
+    border-radius: 28px;
+    padding: 50px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,0,0,0.35);
+    max-width: 700px;
+}
+
+#end-box h1 {
+    margin: 0 0 30px 0;
+    font-size: 56px;
+    line-height: 1.1;
+    color: white;
+    text-shadow:
+    3px 3px 0 rgba(0,0,0,0.25);
+    font-weight: 500;
+}
+
+#end-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#end-buttons button {
+    font-family: "Bitcount", system-ui;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 24px;
+    font-size: 24px;
+    cursor: pointer;
+    background: white;
+    color: black;
+    transition: transform 0.12s;
+}
+
+#end-buttons button:hover {
+    transform: scale(1.05);
+}
+
+#end-box {
+    animation: endPop 0.5s ease-out;
+}
+
+@keyframes endPop {
+    0% {
+    transform: scale(0.6) rotate(-4deg);
+    opacity: 0;
+    }
+
+    70% {
+    transform: scale(1.08) rotate(2deg);
+    opacity: 1;
+    }
+
+    100% {
+    transform: scale(1) rotate(0deg);
+    }
+}
+#music-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#music-controls button {
+  font-family: "Bitcount", system-ui;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: white;
+}

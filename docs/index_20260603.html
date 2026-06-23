@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Park Game UU</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+
+    body {
+      margin: 0;
+      background: #e2ffad;
+      font-family: "Bitcount", system-ui;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+      box-sizing: border-box;
+    }
+
+    #container {
+      width: 100%;
+      max-width: 900px;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-weight: 400;
+    }
+
+    p {
+      font-size: 20px;
+      line-height: 1.5;
+    }
+
+    #video-wrapper {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      margin-top: 20px;
+      margin-bottom: 30px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    #instructVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 12px;
+    }
+
+    #avatars {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      margin-bottom: 30px;
+    }
+
+    .avatar {
+      width: 120px;
+      height: 120px;
+      border: 4px solid transparent;
+      border-radius: 12px;
+      background: #f5f5f5;
+      cursor: pointer;
+      transition: 0.15s;
+      image-rendering: pixelated;
+    }
+
+    .avatar:hover {
+      transform: scale(1.05);
+    }
+
+    .avatar.selected {
+      border-color: rgb(255,187,0);
+      background: #fff8dd;
+    }
+
+    #startBtn {
+      padding: 16px 24px;
+      font-size: 22px;
+      font-family: inherit;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: rgb(255,187,0);
+    }
+
+    #matchmaking {
+      display: none;
+      margin-top: 30px;
+      padding: 20px;
+      background: #f2f2f2;
+      border-radius: 12px;
+      font-size: 22px;
+    }
+
+    #status {
+      margin-top: 12px;
+      font-size: 18px;
+      opacity: 0.8;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="container">
+
+    <h1>Welkom bij de Park Game van de UU</h1>
+
+    <p>
+      Bouw samen met een andere speler een gezellig park.
+      Jullie bouwen om de beurt en kunnen elkaar helpen
+      met samen paden of speeltoestellen afmaken. <br/>
+      Bekijk de video hieronder over hoe je bouwt, kies daarna een bouwer en start het spel. Jij en je bouwmaatje kunnen 5 minuten bouwen.
+    </p>
+
+    <div id="video-wrapper">
+
+      <!-- placeholder -->
+      <video
+        id="instructVideo"
+        controls
+        preload="metadata"
+        playsinline
+        poster="assets/video/poster2.png"
+        controlslist="nodownload noplaybackrate"
+        disablepictureinpicture>
+
+        <source
+          src="assets/video/instruct2.mp4"
+          type="video/mp4">
+
+      </video>
+
+    </div>
+
+    <h2>Kies je bouwer</h2>
+
+    <div id="avatars">
+
+      <img class="avatar"
+           src="assets/players/player01.png"
+           data-avatar="assets/players/player01.png">
+
+      <img class="avatar"
+           src="assets/players/player02.png"
+           data-avatar="assets/players/player02.png">
+
+      <img class="avatar"
+           src="assets/players/player03.png"
+           data-avatar="assets/players/player03.png">
+
+      <img class="avatar"
+           src="assets/players/player04.png"
+           data-avatar="assets/players/player04.png">
+
+    </div>
+
+    <button id="startBtn" disabled>
+      Start spel...
+    </button>
+
+    <div id="matchmaking">
+      <div id="matchTitle">
+        Verbinden met game...
+      </div>
+
+      <div id="status">
+        ...
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+
+    let selectedAvatar = null;
+
+    const avatars =
+      document.querySelectorAll('.avatar');
+
+    const startBtn =
+      document.getElementById('startBtn');
+
+    avatars.forEach(avatar => {
+
+      avatar.addEventListener('click', () => {
+
+        avatars.forEach(a =>
+          a.classList.remove('selected')
+        );
+
+        avatar.classList.add('selected');
+
+        selectedAvatar =
+          avatar.dataset.avatar;
+
+        startBtn.disabled = false;
+        startBtn.innerText =
+          "Start spel";
+      });
+    });
+
+    startBtn.addEventListener('click', () => {
+
+      if (!selectedAvatar) return;
+
+      // save selected avatar
+      localStorage.setItem(
+        'playerAvatar',
+        selectedAvatar
+      );
+
+      document.getElementById(
+        'matchmaking'
+      ).style.display = 'block';
+
+      startBtn.style.display = 'none';
+
+      fakeMatchmaking();
+    });
+
+    function fakeMatchmaking() {
+
+      const botornot = Math.random() < -0.01; // -0.01 always 'human', 1.01 always bot
+
+      if (botornot) {
+          localStorage.setItem(
+          'otherAvatar',
+          "assets/players/otherplayer01.png");
+          console.log("bot player");
+      } else {
+          localStorage.setItem(
+          'otherAvatar',
+          "assets/players/player04.png");
+          console.log("'human' player");
+      }
+      
+      const stepTimes = [
+        Math.random()*500 +1600,
+        Math.random()*500 +1700,
+        Math.random()*500 +5200,
+        Math.random()*500 +1650,
+        Math.random()*500 +1800,
+        Math.random()*500 +1100,
+      ];
+
+      const status =
+        document.getElementById('status');
+
+      const stepsH = [
+
+        "Verbinden met server...",
+        "Verbonden",
+        "Bouwmaatje zoeken...",
+        "Bouwmaatje gevonden!",
+        "Spel voorbereiden...",
+        "Spel staat klaar..."
+      ];
+
+      const stepsR = [
+
+        "Verbinden met server...",
+        "Verbonden",
+        "Bouwmaatje zoeken...",
+        "Geen bouwmaatje gevonden... gebruik robot",
+        "Spel voorbereiden...",
+        "Spel staat klaar..."
+      ];
+
+      let i = 0;
+
+      const interval = setInterval(() => {
+
+        if (botornot) {
+          status.innerText = stepsR[i];
+        } else {
+          status.innerText = stepsH[i];
+        }
+        
+
+        i++;
+
+        if (i >= stepsH.length || i >= stepsR.length) {
+
+          clearInterval(interval);
+
+          setTimeout(() => {
+
+            window.location.href =
+              "game.html";
+
+          }, Math.random()*500+700);
+        }
+
+      }, stepTimes[i]);
+    }
+
+  </script>
+
+</body>
+</html>

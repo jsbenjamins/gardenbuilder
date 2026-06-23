@@ -1,3 +1,19 @@
+In another chats "Park builder chat 1-5" we've build a game with the idea of an online park builder where we place and delete objects as a player, can draw a continuous path and a bot, very human-like, builds along with the player most of the time, but can have a bit of a mind of its own as long as it clearly cooperates with the player! The full code pasted below between ==== lines works fully (it gets some avatar imformation from a preloading index.html, the game self runs as game.html). Ignore any previous code before today, june 22nd 2026, in this or any other chat we had. In this new chat I want to continue working on the game, keep the tone in which you cooperate with me professional and not overly positive. 
+
+The game now also has a clear end including animation, background music and options to download the built park and go to a survey. 
+
+There is two minor things that I would like to fix:
+- when the player places a bench, the bot now places a random bench close. Change this to placing a bench directly next to a path where benchN goes directly below of a east-west path section, benchS directly above such a path section. Likewise a benchW goes directly left to a north-south path section and a benchE directly right.
+- there are some instances where the bot still (when following the player in building a path) does nothing. check whether this indeed is possible and suggest a fix.
+
+After these fixes, I want to make the game mobile friendly, which requires mainly all mouse over and mouse out animation to have a mobile friendly equivalent:
+1) previewRect and player cursor
+2) tooltip
+
+I see two solutions:
+- make placement of elements drag n drop. For desktop this would then become click, hold, drag and release to place and for mobile it would be tap, hold, drag and release to place. Not sure how this would work for path drawing (maybe not drag from toolbar, but drag and draw directly on the grass?)
+- desktop placement stays the same and mobile does something else.
+====
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1273,52 +1289,6 @@
       return count === 1;
     }
 
-    function getBenchCandidatesNearPath(x, y) {
-      const conn = getConnections(x, y);
-      const candidates = [];
-
-      const horizontal = conn.E || conn.W;
-      const vertical   = conn.N || conn.S;
-
-      // East-West path
-      if (horizontal) {
-
-        // bench below path
-        candidates.push({
-          type: 'rot1', // benchN
-          x,
-          y: y + 1
-        });
-
-        // bench above path
-        candidates.push({
-          type: 'rot3', // benchS
-          x,
-          y: y - 1
-        });
-      }
-
-      // North-South path
-      if (vertical) {
-
-        // bench right of path
-        candidates.push({
-          type: 'rot4', // benchW
-          x: x + 1,
-          y
-        });
-
-        // bench left of path
-        candidates.push({
-          type: 'rot2', // benchE
-          x: x - 1,
-          y
-        });
-      }
-
-      return candidates;
-    }
-
     // ------------------ END PATH SYSTEM ----------
 
     function canPlace(type, x, y) {
@@ -1867,42 +1837,6 @@
               Math.abs(p.y - y) <= BOT_LOCAL_RADIUS
             );
 
-          // if (nearbyPaths.length) {
-
-          //   const chosen =
-          //     nearbyPaths[
-          //       Math.floor(Math.random() * nearbyPaths.length)
-          //     ];
-
-          //   // const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
-
-          //   for (let i = 0; i < 8; i++) {
-
-          //     const bench =
-          //       benchTypes[
-          //         Math.floor(Math.random() * benchTypes.length)
-          //       ];
-
-          //     const bx =
-          //       chosen.x + Math.floor(Math.random() * 3) - 1;
-
-          //     const by =
-          //       chosen.y + Math.floor(Math.random() * 3) - 1;
-
-          //     if (canPlace(bench, bx, by)) {
-
-          //       return moveBotCursorTo(
-          //         bx,
-          //         by,
-          //         'place',
-          //         bench,
-          //         () => {
-          //           placeSprite(bench, bx, by, true);
-          //         }
-          //       );
-          //     }
-          //   }
-          // }
           if (nearbyPaths.length) {
 
             const chosen =
@@ -1910,32 +1844,33 @@
                 Math.floor(Math.random() * nearbyPaths.length)
               ];
 
-            const candidates = getBenchCandidatesNearPath(
-              chosen.x,
-              chosen.y
-            ).filter(c => canPlace(c.type, c.x, c.y));
+            const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
 
-            if (candidates.length) {
+            for (let i = 0; i < 8; i++) {
 
               const bench =
-                candidates[
-                  Math.floor(Math.random() * candidates.length)
+                benchTypes[
+                  Math.floor(Math.random() * benchTypes.length)
                 ];
 
-              return moveBotCursorTo(
-                bench.x,
-                bench.y,
-                'place',
-                bench.type,
-                () => {
-                  placeSprite(
-                    bench.type,
-                    bench.x,
-                    bench.y,
-                    true
-                  );
-                }
-              );
+              const bx =
+                chosen.x + Math.floor(Math.random() * 3) - 1;
+
+              const by =
+                chosen.y + Math.floor(Math.random() * 3) - 1;
+
+              if (canPlace(bench, bx, by)) {
+
+                return moveBotCursorTo(
+                  bx,
+                  by,
+                  'place',
+                  bench,
+                  () => {
+                    placeSprite(bench, bx, by, true);
+                  }
+                );
+              }
             }
           }
         }
@@ -2089,7 +2024,8 @@
           'bot'
         );
         if (!success) {
-          return botImperfect();
+          botBusy = false;
+          endBotTurn();
         }
       });
     }
@@ -2402,3 +2338,4 @@
   </script>
 </body>
 </html>
+====

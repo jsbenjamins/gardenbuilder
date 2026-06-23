@@ -1,0 +1,639 @@
+I have changed the website a bit, but the code below (see between the ===== lines) is a good working version for me on which I would like now to continue to build. Ignore any previously generated code before april 15th 2026, but keep the idea of an online garden builder where we place and delete objects as a player and a bot very human-like builds with the player (most of the time)! 
+
+Next in the gardenbuilder, I want to have an option to build paths in the garden.
+Requirements:
+- Path should be just one extra "item" to choose besides the existing bushes and trees.
+- Path build history/trajectory should be kept such that a path can be extended logically according to a tileset of tiles that consists of 16 available tiles where on either north, east,south or west side of the tile the path can be continued. Current path building direction should also be kept track of from the second path tile placement onwards.
+- the first tile used for starting a path is always closedA. When clicking directly north of the  start tile, the start tile should change to change to openN and the new tile should be openS such that the two placed tiles connect nicely. If the next tile (i.e. third path tile) is also placed directly north of the current path the starting tile stays the same (openN), the second tile become openNS and the third tile will be an openS. If the forth tile is also north, the third tile should change to openNS from openS and the fourth will be openS etc. Likewise if the fourth tile would be placed directly east of the third tile, the third tile would become openSE and the forth would be openE.
+- when there is  empty tile space in between two consecutively placed path tiles, it should start with a closedA starting tile again and if the gap is clicked filled logically.
+- for now have the bot either continues building the path in the current direction when following and places a random non-path element when not following. The bot should, for now, not delete path tiles.
+- there are 16 tiles of exactly a grid cell in width and length (32x32): closedA (starting tiles, all connections closed). openN (pathtile with an opening on the north side to connect to tile north of it), openS, openW, openE, openNS, openWE, openSE,openNE, openSW, openNW, openNSE, openNSW, openWES, openWEN and openA. They all have extension ".png" and are located under the folder 'assets/path/'
+- use openNS.png as the image for the list of items on the left
+- when clicking a cell at the edge of the whole grid: at the north and south edge, use openNS.png as path tile, on the west and east edge use openWE.png as path tile
+- leave javascript functions that are not relevant for this path building addition intact! Try to mainly add code and only alter where needed (e.g. canPlace should respect grid cells that already have trees or bushes and should overwrite a path.
+
+While working on this with me, keep your tone professional without the overly positive vibes you usually use. 
+
+The current working code between lines:
+=====<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+    #tools { display: flex; gap: 5px; }
+    #stage-container {
+      flex: 1;
+      cursor: url('assets/cursor-place-human.png') 16 16, auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Actie</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase"><img src="assets/cursor-erase-human.png" width="40"></div>
+      <div class="tool" data-tool="pick"><img src="assets/cursor-place-human.png" width="40"></div>
+    </div>
+
+    <h3>Elementen</h3>
+    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
+    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
+    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
+    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
+    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
+    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
+  </div>
+
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 25;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+    
+    const grassTiles = [
+      'assets/grass1.png',
+      'assets/grass2.png',
+      'assets/grass3.png',
+      'assets/grass4.png'
+    ];
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width,
+      height
+    });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // BOT stuff
+    const BOT_FOLLOW_CHANCE = 0.8;
+
+    let lastHumanAction = null; // { type, x, y }
+    let placedSprites = [];     // track placements 
+    const BOT_SYMMETRY_STRENGTH = 1.0; // 0 → off, 2 → very strong
+
+    const botPlaceCursor = new Konva.Image({
+      x: 0,
+      y: 0,
+      opacity: 0.5,
+      visible: false
+    });
+
+    const botDeleteCursor = new Konva.Image({
+      x: 0,
+      y: 0,
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      opacity: 0.5,
+      visible: false
+    });
+
+    const centerX = Math.floor(GRID_SIZE / 2) * CELL_SIZE;
+    const centerY = Math.floor(GRID_SIZE / 2) * CELL_SIZE;
+
+    botPlaceCursor.x(centerX);
+    botPlaceCursor.y(centerY);
+
+    botDeleteCursor.x(centerX);
+    botDeleteCursor.y(centerY);
+
+    let botPlaceReady = false;
+
+    const botPlaceImg = new Image();
+    botPlaceImg.src = 'assets/bot-place.png';
+    botPlaceImg.onload = () => {
+      botPlaceCursor.image(botPlaceImg);
+      botPlaceReady = true;
+    };
+
+    const botDeleteImg = new Image();
+    botDeleteImg.src = 'assets/bot-erase.png';
+    botDeleteImg.onload = () => {
+      botDeleteCursor.image(botDeleteImg);
+    };
+
+    // const botPlaceImg = new Image();
+    // botPlaceImg.src = 'assets/bot-place.png';
+
+    // const botDeleteImg = new Image();
+    // botDeleteImg.src = 'assets/bot-erase.png';
+
+    // botPlaceImg.onload = () => {
+    //   botPlaceCursor.image(botPlaceImg);
+    // };
+
+    // botDeleteImg.onload = () => {
+    //   botDeleteCursor.image(botDeleteImg);
+    // };
+
+    itemLayer.add(botPlaceCursor);
+    itemLayer.add(botDeleteCursor);
+
+    // set bot to not busy at start
+    let botBusy = false;
+
+    const spriteImages = {
+      tree1: 'assets/tree1.png',
+      tree2: 'assets/tree2.png',
+      tree3: 'assets/tree3.png',
+      bush1: 'assets/bush1.png',
+      bush2: 'assets/bush2.png',
+      bush3: 'assets/bush3.png',
+    };
+
+    // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
+    const spriteSizes = {
+      tree1: { w: 2, h: 2, c: 1},
+      tree2: { w: 2, h: 2, c: 1},
+      tree3: { w: 2, h: 3, c: 1},
+      bush1: { w: 1, h: 1, c: 2},
+      bush2: { w: 1, h: 1, c: 2},
+      bush3: { w: 1, h: 1, c: 2 },
+    };
+
+    // function to check tile availability
+    function canPlace(type, x, y) {
+      const s = spriteSizes[type];
+
+      // bounds check (multi-tile)
+      if (x < 0 || y < 0 || x + s.w > GRID_SIZE || y + s.h > GRID_SIZE) {
+        return false;
+      }
+
+      // overlap check
+      for (const p of placedSprites) {
+        const overlap =
+          x < p.x + p.w &&
+          x + s.w > p.x &&
+          y < p.y + p.h &&
+          y + s.h > p.y;
+
+        if (overlap) return false;
+      }
+
+      return true;
+    }
+
+    // for BOT determine position scores when following
+    function scorePosition(type, x, y, humanX, humanY) {
+      let score = 0;
+
+      const category = spriteSizes[type].c;
+
+      // ---------- 1. SYMMETRY (strong weight)
+      const centerX = Math.floor(GRID_SIZE / 2);
+      const centerY = Math.floor(GRID_SIZE / 2);
+
+      const dx = humanX - centerX;
+      const dy = humanY - centerY;
+
+      const sx = centerX - dx;
+      const sy = centerY - dy;
+
+      const distToSymmetry = Math.abs(x - sx) + Math.abs(y - sy);
+
+      // score += Math.max(0, 20 - distToSymmetry * 5); // strong pull
+      score += BOT_SYMMETRY_STRENGTH * Math.max(0, 20 - distToSymmetry * 5);
+
+
+      // ---------- 2. CLUSTERING (same category neighbors)
+      let neighbors = 0;
+
+      for (const p of placedSprites) {
+        if (spriteSizes[p.type].c !== category) continue;
+
+        const dist = Math.abs(x - p.x) + Math.abs(y - p.y);
+        if (dist <= 2) neighbors++;
+      }
+
+      score += neighbors * 4;
+
+
+      // ---------- 3. DISTANCE TO HUMAN (soft preference)
+      const distToHuman = Math.abs(x - humanX) + Math.abs(y - humanY);
+      score += Math.max(0, 10 - distToHuman);
+
+
+      return score;
+    }
+
+    // for BOT to find best scoring position when following
+    function findBestPosition(type, originX, originY) {
+      let best = null;
+      let bestScore = -Infinity;
+
+      // search area (local but wide enough)
+      for (let dx = -4; dx <= 4; dx++) {
+        for (let dy = -4; dy <= 4; dy++) {
+          const x = originX + dx;
+          const y = originY + dy;
+
+          if (!canPlace(type, x, y)) continue;
+
+          const score = scorePosition(type, x, y, originX, originY);
+
+          if (score > bestScore) {
+            bestScore = score;
+            best = { x, y };
+          }
+        }
+      }
+
+      return best;
+    }
+
+    // Building: grass background
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const img = new Image();
+        img.src = grassTiles[Math.floor(Math.random() * grassTiles.length)];
+
+        const tile = new Konva.Image({
+          x: x * CELL_SIZE,
+          y: y * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE
+        });
+
+        img.onload = () => {
+          tile.image(img);
+          bgLayer.draw();
+        };
+
+        bgLayer.add(tile);
+      }
+    }
+
+    // set HUMAN into start mode
+    let selectedType = null;
+    let selectedTool = null;
+    let zCounter = 1;
+
+    // No cross-clearing!
+    function clearSelectedUItool() {
+      document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+    }
+    function clearSelectedUIitem() {
+      document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    }
+
+    // Tool selection
+    document.querySelectorAll('.tool').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.dataset.tool;
+        selectedType = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // Item selection
+    document.querySelectorAll('.item').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.add('selected');
+        selectedType = el.dataset.type;
+        selectedTool = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // ---------- MULTI-TILE PLACEMENT ----------
+    function placeSprite(type, gridX, gridY, isBot = false) {
+      // check whether gird cell is already occupied
+      if (!canPlace(type, gridX, gridY)) return;
+
+      const img = new Image();
+      img.src = spriteImages[type];
+
+      img.onload = () => {
+        const wat = spriteSizes[type];
+        const widthPx = wat.w * CELL_SIZE;
+        const heightPx = wat.h * CELL_SIZE;
+
+        const sprite = new Konva.Image({
+          id: `cell-${gridX}-${gridY}`,
+          x: gridX * CELL_SIZE,
+          y: gridY * CELL_SIZE,
+          width: widthPx,
+          height: heightPx,
+          image: img,
+          draggable: false,
+          zIndex: zCounter++
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+
+        sprite.to({
+          scaleX: 1,
+          scaleY: 1,
+          duration: 0.15,
+          easing: Konva.Easings.EaseOut
+        });
+
+        itemLayer.draw();
+
+        // track placement
+        placedSprites.push({
+          type,
+          x: gridX,
+          y: gridY,
+          w: wat.w,
+          h: wat.h,
+          sprite
+        });
+
+        // only track HUMAN actions
+        if (!isBot) {
+          lastHumanAction = { type, x: gridX, y: gridY };
+          triggerBot();
+        }
+      };
+    }
+
+    function deleteSprite(gridX, gridY, isBot = false) {
+      const index = placedSprites.findIndex(p => p.x === gridX && p.y === gridY);
+      if (index === -1) return;
+
+      const obj = placedSprites[index];
+
+      obj.sprite.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          obj.sprite.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+
+      placedSprites.splice(index, 1);
+
+      if (!isBot) {
+        lastHumanAction = { delete: true, x: gridX, y: gridY };
+        triggerBot();
+      }
+    }
+
+    function triggerBot() {
+      const delayOptions = [300, 450, 800, 1300];
+      const delay = delayOptions[Math.floor(Math.random() * delayOptions.length)];
+
+      setTimeout(() => runBot(), delay);
+    }
+
+    function runBot() {
+      if (botBusy) return;
+      if (!lastHumanAction || lastHumanAction.delete) return;
+
+      botBusy = true;
+
+      const follow = Math.random() < BOT_FOLLOW_CHANCE;
+
+      if (follow) {
+        botFollow();
+      } else {
+        botRandom();
+      }
+    }
+
+    // newer botFollow that acts more intentional (clustering, symmetry, follow and fallback)
+    function botFollow() {
+      const { type, x, y } = lastHumanAction;
+      const category = spriteSizes[type].c;
+
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === category);
+      const botType = options[Math.floor(Math.random() * options.length)];
+
+      const best = findBestPosition(botType, x, y);
+
+      if (best) {
+        return moveBotCursorTo(best.x, best.y, 'place', botType, () => {
+          placeSprite(botType, best.x, best.y, true);
+        });
+      }
+
+      // fallback (rare)
+      botRandom();
+    }
+
+    function botRandom() {
+      const doDelete = Math.random() < 0.5;
+
+      if (doDelete && placedSprites.length > 0) {
+        moveBotCursorTo(lastHumanAction.x, lastHumanAction.y, 'delete', null, () => {
+          deleteSprite(lastHumanAction.x, lastHumanAction.y, true);
+        });
+        return;
+      }
+
+      const categories = [...new Set(Object.values(spriteSizes).map(s => s.c))];
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory);
+
+      for (let i = 0; i < 10; i++) {
+        const type = options[Math.floor(Math.random() * options.length)];
+        const x = Math.floor(Math.random() * GRID_SIZE);
+        const y = Math.floor(Math.random() * GRID_SIZE);
+
+        if (canPlace(type, x, y)) {
+          return moveBotCursorTo(x, y, 'place', type, () => {
+            placeSprite(type, x, y, true);
+          });
+        }
+      }
+
+      botBusy = false;
+    }
+
+    function moveBotCursorTo(gridX, gridY, mode, type, callback) {
+      if (mode === 'place' && !botPlaceReady) {
+        // fallback: skip animation but still place
+        if (callback) callback();
+        botBusy = false;
+        return;
+      }
+      const baseX = gridX * CELL_SIZE;
+      const baseY = gridY * CELL_SIZE;
+
+      // hide both first
+      botPlaceCursor.visible(false);
+      botDeleteCursor.visible(false);
+
+      let cursor;
+
+      if (mode === 'place') {
+        cursor = botPlaceCursor;
+      } else {
+        cursor = botDeleteCursor;
+      }
+
+      // always 1 tile size
+      cursor.width(CELL_SIZE);
+      cursor.height(CELL_SIZE);
+
+      // ---------- CURRENT POSITION (already initialized to center)
+      const startX = cursor.x();
+      const startY = cursor.y();
+
+      // ---------- MISALIGNMENT (small offset)
+      const offsetX = (Math.random() - 0.5) * 6; // -3 to +3 px
+      const offsetY = (Math.random() - 0.5) * 6;
+
+      const targetX = baseX + offsetX;
+      const targetY = baseY + offsetY;
+
+      cursor.scale({ x: 1, y: 1 });
+      cursor.visible(true);
+
+      // ---------- PRE-MOVE HESITATION ----------
+      const preDelay = [80, 120, 160][Math.floor(Math.random() * 3)];
+
+      setTimeout(() => {
+        cursor.visible(true);
+        // ---------- MOVE (slightly imperfect)
+        cursor.to({
+          x: targetX,
+          y: targetY,
+          duration: 0.35,
+          easing: Konva.Easings.EaseInOut,
+          onFinish: () => {
+
+            // ---------- MICRO CORRECTION (snap into place)
+            cursor.to({
+              x: baseX,
+              y: baseY,
+              duration: 0.08,
+              onFinish: () => {
+
+                // ---------- HOVER DELAY ----------
+                const hoverDelay = [120, 180, 250][Math.floor(Math.random() * 3)];
+
+                setTimeout(() => {
+
+                  // ---------- CLICK ----------
+                  cursor.to({
+                    scaleX: 0.8,
+                    scaleY: 0.8,
+                    duration: 0.08,
+                    onFinish: () => {
+                      cursor.to({
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 0.08,
+                        onFinish: () => {
+
+                          cursor.visible(false);
+
+                          if (callback) callback();
+
+                          botBusy = false;
+                        }
+                      });
+                    }
+                  });
+
+                }, hoverDelay);
+              }
+            });
+
+          }
+        });
+
+      }, preDelay);
+    }
+    // ---------- FIXED KONVA CLICK DETECTION ----------
+    // Must set listening(true) and pointer-events must not be blocked
+    bgLayer.listening(true);
+    itemLayer.listening(true);
+    stage.listening(true);
+
+    stage.on('pointerdown', () => {
+      const pos = stage.getPointerPosition();
+      if (!pos) return; // safety
+
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Tool: erase
+      if (selectedTool === 'erase') {
+        deleteSprite(gridX, gridY);
+        return;
+      }
+
+      // Tool: pick
+      if (selectedTool === 'pick') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          const src = existing.image().src;
+          const type = Object.keys(spriteImages).find(t => spriteImages[t] === src);
+
+          if (type) {
+            clearSelectedUIitem();
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            selectedType = type;
+          }
+        }
+        return;
+      }
+
+      // Placement mode
+      if (selectedType) {
+        deleteSprite(gridX, gridY);
+        placeSprite(selectedType, gridX, gridY);
+      }
+    });
+
+    function updateCursor() {
+      const container = document.getElementById('stage-container');
+
+      if (selectedTool === 'erase') {
+        container.style.cursor = "url('assets/cursor-erase-human.png') 16 16, auto";
+      } else {
+        container.style.cursor = "url('assets/cursor-place-human.png') 16 16, auto";
+      }
+    }
+  </script>
+</body>
+</html>
+
+=====
+

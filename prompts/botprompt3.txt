@@ -1,0 +1,858 @@
+I have changed the website a bit, but the code below (see between the ===== lines) is a good working version for me on which I would like now to continue to build. Ignore any previously generated code before April 22nd 2026, but keep the idea of an online garden builder where we place and delete objects as a player, can draw a continuous path and a bot, very human-like, builds along with the player (most of the time)! 
+
+Next in the gardenbuilder, we need to fix some issues with the path builder, which I think require keeping track of the path(s) drawn thus far, e.g. path history
+Issue 1:
+- when going around a corner, let's stay a corner turning north consisting of three tiles (openWE, with openNW east of it and openS north of openNW) I can also place a path tile directly west of the openS tile. The openS then becomes an openWS tile and the openWE should, but does not always (that's issue 2 we need to solve as well), becomes an openNWE tile. This is drawing behavior I'd like to prevent as it generates weird 'squares'. Basically, I would not want two paths to run directly parallel as they become 'squares', but would want one empty tile between paths. I think this comes down to paths not being allowed to change directions twice in two consecutive moves.
+Issue 2:
+- when drawn a path with one corner, let's say openWE, openWE, openNW, openNS, openS consecutively, if I decide to extend the currently north going path to south as well by clicking right below the the openNW tile, the code now places an openN south of it only without replacing the openNW to an openNSW. I think this behavior might actuallt require a solution where all path drawing history is kept.
+- leave javascript functions that are not relevant for this path building fix intact! Try to mainly add code and only alter where needed (e.g. canPlace should probably be altered a bit).
+- solve the issues separately or if one solution would work for both implement that.
+
+The current working code between lines:
+=====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+    #tools { display: flex; gap: 5px; }
+    #stage-container {
+      flex: 1;
+      cursor: url('assets/cursor-place-human.png') 16 16, auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Actie</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase"><img src="assets/cursor-erase-human.png" width="40"></div>
+      <div class="tool" data-tool="pick"><img src="assets/cursor-place-human.png" width="40"></div>
+    </div>
+
+    <h3>Elementen</h3>
+    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
+    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
+    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
+    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
+    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
+    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
+    <div class="item" data-type="path"><img src="assets/path/openNS.png" width="40"></div>
+    <div class="item" data-type="fun1"><img src="assets/funel/fountain.png" width="40"></div>
+    <div class="item" data-type="fun2"><img src="assets/funel/benchS.png" width="40"></div>
+    <div class="item" data-type="fun3"><img src="assets/funel/pzoo.png" width="40"></div>
+  </div>
+
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 25;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+    
+    const grassTiles = [
+      'assets/grass1.png',
+      'assets/grass2.png',
+      'assets/grass3.png',
+      'assets/grass4.png'
+    ];
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width,
+      height
+    });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // BOT stuff
+    const BOT_FOLLOW_CHANCE = 1.01;
+
+    let lastHumanAction = null; // { type, x, y }
+    let placedSprites = [];     // track placements 
+    let currentPathDirection = null; 
+    let lastPathTile = null;
+
+    const BOT_SYMMETRY_STRENGTH = 1.0; // 0 → off, 2 → very strong
+
+    const botPlaceCursor = new Konva.Image({
+      x: 0,
+      y: 0,
+      opacity: 0.5,
+      visible: false
+    });
+
+    const botDeleteCursor = new Konva.Image({
+      x: 0,
+      y: 0,
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      opacity: 0.5,
+      visible: false
+    });
+
+    const centerX = Math.floor(GRID_SIZE / 2) * CELL_SIZE;
+    const centerY = Math.floor(GRID_SIZE / 2) * CELL_SIZE;
+
+    botPlaceCursor.x(centerX);
+    botPlaceCursor.y(centerY);
+
+    botDeleteCursor.x(centerX);
+    botDeleteCursor.y(centerY);
+
+    let botPlaceReady = false;
+
+    const botPlaceImg = new Image();
+    botPlaceImg.src = 'assets/bot-place.png';
+    botPlaceImg.onload = () => {
+      botPlaceCursor.image(botPlaceImg);
+      botPlaceReady = true;
+    };
+
+    const botDeleteImg = new Image();
+    botDeleteImg.src = 'assets/bot-erase.png';
+    botDeleteImg.onload = () => {
+      botDeleteCursor.image(botDeleteImg);
+    };
+
+    itemLayer.add(botPlaceCursor);
+    itemLayer.add(botDeleteCursor);
+
+    // set bot to not busy at start
+    let botBusy = false;
+
+    const spriteImages = {
+      tree1: 'assets/tree1.png',
+      tree2: 'assets/tree2.png',
+      tree3: 'assets/tree3.png',
+      bush1: 'assets/bush1.png',
+      bush2: 'assets/bush2.png',
+      bush3: 'assets/bush3.png',
+      fun1: 'assets/funel/fountain.png',
+      fun2: 'assets/funel/benchS.png',
+      fun3: 'assets/funel/pzoo.png',
+    };
+
+    // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
+    const spriteSizes = {
+      tree1: { w: 2, h: 2, c: 1},
+      tree2: { w: 2, h: 2, c: 1},
+      tree3: { w: 2, h: 3, c: 1},
+      bush1: { w: 1, h: 1, c: 2},
+      bush2: { w: 1, h: 1, c: 2},
+      bush3: { w: 1, h: 1, c: 2 },
+      path: { w: 1, h: 1, c: 3 },
+      fun1: { w: 2, h: 2, c: 4 },
+      fun2: { w: 2, h: 1, c: 4 },
+      fun3: { w: 6, h: 4, c: 4 },
+    };
+
+    // ---------- PATH SYSTEM ----------
+    const pathTiles = {}; // key: "x-y" → { sprite, connections: {N,E,S,W} }
+
+    const pathImages = {
+      closedA: 'assets/path/closedA.png',
+      openN: 'assets/path/openN.png',
+      openS: 'assets/path/openS.png',
+      openE: 'assets/path/openE.png',
+      openW: 'assets/path/openW.png',
+      openNS: 'assets/path/openNS.png',
+      openWE: 'assets/path/openWE.png',
+      openSE: 'assets/path/openSE.png',
+      openNE: 'assets/path/openNE.png',
+      openSW: 'assets/path/openSW.png',
+      openNW: 'assets/path/openNW.png',
+      openNSE: 'assets/path/openNSE.png',
+      openNSW: 'assets/path/openNSW.png',
+      openWES: 'assets/path/openWES.png',
+      openWEN: 'assets/path/openWEN.png',
+      openA: 'assets/path/openA.png'
+    };
+
+    function key(x, y) {
+      return `${x}-${y}`;
+    }
+
+    function getConnections(x, y) {
+      return pathTiles[key(x, y)]?.connections || { N:false, E:false, S:false, W:false };
+    }
+
+    function setConnection(conn, dir, val) {
+      conn[dir] = val;
+    }
+
+    function connectionsToTile(conn) {
+      const {N,E,S,W} = conn;
+
+      const map = {
+        "0000": "closedA",
+        "1000": "openN",
+        "0010": "openS",
+        "0100": "openE",
+        "0001": "openW",
+        "1010": "openNS",
+        "0101": "openWE",
+        "0110": "openSE",
+        "1100": "openNE",
+        "0011": "openSW",
+        "1001": "openNW",
+        "1110": "openNSE",
+        "1011": "openNSW",
+        "0111": "openWES",
+        "1101": "openWEN",
+        "1111": "openA"
+      };
+
+      const keyStr = `${+N}${+E}${+S}${+W}`;
+      return map[keyStr] || "closedA";
+    }
+
+    function drawPathTile(x, y) {
+      const conn = getConnections(x, y);
+      const tileType = connectionsToTile(conn);
+
+      const img = new Image();
+      img.src = pathImages[tileType];
+
+      img.onload = () => {
+        let tile = pathTiles[key(x,y)]?.sprite;
+
+        if (!tile) {
+          tile = new Konva.Image({
+            x: x * CELL_SIZE,
+            y: y * CELL_SIZE,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+            zIndex: zCounter++
+          });
+
+          itemLayer.add(tile);
+          pathTiles[key(x,y)] = { sprite: tile, connections: conn };
+        }
+
+        tile.image(img);
+        itemLayer.draw();
+      };
+    }
+
+    function placePath(type, x, y, isBot = false) {
+      console.log(type);
+      // prevent placing over trees/bushes
+      if (placedSprites.some(p =>
+        x < p.x + p.w &&
+        x + 1 > p.x &&
+        y < p.y + p.h &&
+        y + 1 > p.y
+      )) return;
+
+      if (!pathTiles[key(x,y)]) {
+        pathTiles[key(x,y)] = {
+          connections: { N:false, E:false, S:false, W:false }
+        };
+      }
+
+      const dirs = [
+        { dx:0, dy:-1, d:"N", o:"S" },
+        { dx:1, dy:0, d:"E", o:"W" },
+        { dx:0, dy:1, d:"S", o:"N" },
+        { dx:-1, dy:0, d:"W", o:"E" }
+      ];
+
+      const current = pathTiles[key(x,y)].connections;
+
+      dirs.forEach(({dx,dy,d,o}) => {
+        const nx = x + dx;
+        const ny = y + dy;
+
+        const neighbor = pathTiles[key(nx,ny)];
+
+        if (neighbor) {
+          current[d] = true;
+          neighbor.connections[o] = true;
+          drawPathTile(nx, ny);
+        }
+      });
+
+      // edge override
+      if (y === 0 || y === GRID_SIZE - 1) {
+        pathTiles[key(x,y)].connections = { N:true, E:false, S:true, W:false };
+      }
+      if (x === 0 || x === GRID_SIZE - 1) {
+        pathTiles[key(x,y)].connections = { N:false, E:true, S:false, W:true };
+      }
+
+      // ---------- PATH STATE TRACKING (HUMAN ONLY)
+      if (!isBot) {
+        if (!lastPathTile) {
+          // first tile
+          lastPathTile = { x, y };
+          currentPathDirection = null;
+        } else {
+          const dx = x - lastPathTile.x;
+          const dy = y - lastPathTile.y;
+
+          // only cardinal directions (no diagonals)
+          if (Math.abs(dx) + Math.abs(dy) === 1) {
+            currentPathDirection = { dx, dy };
+          } else {
+            // gap or jump → reset direction
+            currentPathDirection = null;
+          }
+
+          lastPathTile = { x, y };
+        }
+      }
+
+      if (!isBot) {
+        lastHumanAction = { type: type, x: x, y: y};
+        triggerBot();
+      }
+
+      drawPathTile(x, y);
+      
+    }
+
+    // function to check tile availability
+    function canPlace(type, x, y) {
+      console.log(type);
+      const s = spriteSizes[type];
+
+      // bounds check (multi-tile)
+      if (x < 0 || y < 0 || x + s.w > GRID_SIZE || y + s.h > GRID_SIZE) {
+        return false;
+      }
+
+      // overlap check
+      for (const p of placedSprites) {
+        const overlap =
+          x < p.x + p.w &&
+          x + s.w > p.x &&
+          y < p.y + p.h &&
+          y + s.h > p.y;
+
+        if (!overlap) continue;
+
+        // allow path to overwrite path
+        if (type === 'path' && p.type === 'path') continue;
+        return false;
+      }
+
+      return true;
+    }
+
+    // for BOT determine position scores when following
+    function scorePosition(type, x, y, humanX, humanY) {
+      let score = 0;
+
+      const category = spriteSizes[type].c;
+
+      // ---------- 1. SYMMETRY (strong weight)
+      const centerX = Math.floor(GRID_SIZE / 2);
+      const centerY = Math.floor(GRID_SIZE / 2);
+
+      const dx = humanX - centerX;
+      const dy = humanY - centerY;
+
+      const sx = centerX - dx;
+      const sy = centerY - dy;
+
+      const distToSymmetry = Math.abs(x - sx) + Math.abs(y - sy);
+
+      // score += Math.max(0, 20 - distToSymmetry * 5); // strong pull
+      score += BOT_SYMMETRY_STRENGTH * Math.max(0, 20 - distToSymmetry * 5);
+
+
+      // ---------- 2. CLUSTERING (same category neighbors)
+      let neighbors = 0;
+
+      for (const p of placedSprites) {
+        if (spriteSizes[p.type].c !== category) continue;
+
+        const dist = Math.abs(x - p.x) + Math.abs(y - p.y);
+        if (dist <= 2) neighbors++;
+      }
+
+      score += neighbors * 4;
+
+
+      // ---------- 3. DISTANCE TO HUMAN (soft preference)
+      const distToHuman = Math.abs(x - humanX) + Math.abs(y - humanY);
+      score += Math.max(0, 10 - distToHuman);
+
+
+      return score;
+    }
+
+    // for BOT to find best scoring position when following
+    function findBestPosition(type, originX, originY) {
+      let best = null;
+      let bestScore = -Infinity;
+
+      // search area (local but wide enough)
+      for (let dx = -4; dx <= 4; dx++) {
+        for (let dy = -4; dy <= 4; dy++) {
+          const x = originX + dx;
+          const y = originY + dy;
+
+          if (!canPlace(type, x, y)) continue;
+
+          const score = scorePosition(type, x, y, originX, originY);
+
+          if (score > bestScore) {
+            bestScore = score;
+            best = { x, y };
+          }
+        }
+      }
+
+      return best;
+    }
+
+    // Building: grass background
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const img = new Image();
+        img.src = grassTiles[Math.floor(Math.random() * grassTiles.length)];
+
+        const tile = new Konva.Image({
+          x: x * CELL_SIZE,
+          y: y * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE
+        });
+
+        img.onload = () => {
+          tile.image(img);
+          bgLayer.draw();
+        };
+
+        bgLayer.add(tile);
+      }
+    }
+
+    // set HUMAN into start mode
+    let selectedType = null;
+    let selectedTool = null;
+    let zCounter = 1;
+
+    // No cross-clearing!
+    function clearSelectedUItool() {
+      document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+    }
+
+    function clearSelectedUIitem() {
+      document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    }
+
+    // Tool selection
+    document.querySelectorAll('.tool').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.dataset.tool;
+        selectedType = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // Item selection
+    document.querySelectorAll('.item').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.add('selected');
+        selectedType = el.dataset.type;
+        selectedTool = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // ---------- MULTI-TILE PLACEMENT ----------
+    function placeSprite(type, gridX, gridY, isBot = false) {
+      // check whether gird cell is already occupied
+      if (!canPlace(type, gridX, gridY)) return;
+
+      const img = new Image();
+      img.src = spriteImages[type];
+
+      img.onload = () => {
+        const wat = spriteSizes[type];
+        const widthPx = wat.w * CELL_SIZE;
+        const heightPx = wat.h * CELL_SIZE;
+
+        const sprite = new Konva.Image({
+          id: `cell-${gridX}-${gridY}`,
+          x: gridX * CELL_SIZE,
+          y: gridY * CELL_SIZE,
+          width: widthPx,
+          height: heightPx,
+          image: img,
+          draggable: false,
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+        sprite.zIndex(zCounter++);
+
+        sprite.to({
+          scaleX: 1,
+          scaleY: 1,
+          duration: 0.15,
+          easing: Konva.Easings.EaseOut
+        });
+
+        itemLayer.draw();
+
+        // track placement
+        placedSprites.push({
+          type,
+          x: gridX,
+          y: gridY,
+          w: wat.w,
+          h: wat.h,
+          sprite
+        });
+
+        // only track HUMAN actions
+        if (!isBot) {
+          lastHumanAction = { type, x: gridX, y: gridY };
+          triggerBot();
+        }
+      };
+    }
+
+    function deleteSprite(gridX, gridY, isBot = false) {
+      const index = placedSprites.findIndex(p => p.x === gridX && p.y === gridY);
+      if (index === -1) return;
+
+      const obj = placedSprites[index];
+
+      obj.sprite.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          obj.sprite.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+
+      placedSprites.splice(index, 1);
+
+      if (!isBot) {
+        lastHumanAction = { delete: true, x: gridX, y: gridY };
+        triggerBot();
+      }
+    }
+
+    function triggerBot() {
+      const delayOptions = [300, 450, 800, 1300];
+      const delay = delayOptions[Math.floor(Math.random() * delayOptions.length)];
+
+      setTimeout(() => runBot(), delay);
+    }
+
+    function runBot() {
+      if (botBusy) return;
+      console.log(lastHumanAction);
+      if (!lastHumanAction || lastHumanAction.delete) return;
+
+      botBusy = true;
+
+      const follow = Math.random() < BOT_FOLLOW_CHANCE;
+
+      if (follow) {
+        console.log("following human");
+        botFollow();
+      } else {
+        botRandom();
+      }
+    }
+
+    // newer botFollow that acts more intentional (clustering, symmetry, follow and fallback)
+    function botFollow() {
+      const { type, x, y } = lastHumanAction;
+      const category = spriteSizes[type].c;
+
+      if (type === 'path') {
+        console.log(type);
+        return botFollowPath();
+      }
+
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === category);
+      const botType = options[Math.floor(Math.random() * options.length)];
+
+      const best = findBestPosition(botType, x, y);
+
+      if (best) {
+        return moveBotCursorTo(best.x, best.y, 'place', botType, () => {
+          placeSprite(botType, best.x, best.y, true);
+        });
+      }
+
+      // fallback (rare)
+      botRandom();
+    }
+
+    function botFollowPath() {
+      console.log("reached botFollowPath");
+      if (!currentPathDirection || !lastPathTile) {
+        botBusy = false;
+        return;
+      }
+
+      const dir = currentPathDirection;
+
+      const nx = lastPathTile.x + dir.dx;
+      const ny = lastPathTile.y + dir.dy;
+
+      // bounds
+      if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) {
+        botBusy = false;
+        return;
+      }
+
+      // don't overwrite trees/bushes
+      const blocked = placedSprites.some(p =>
+        nx < p.x + p.w &&
+        nx + 1 > p.x &&
+        ny < p.y + p.h &&
+        ny + 1 > p.y
+      );
+
+      if (blocked) {
+        botBusy = false;
+        return;
+      }
+
+      moveBotCursorTo(nx, ny, 'place', 'path', () => {
+        placePath('path',nx, ny, true);
+      });
+    }
+
+    function botRandom() {
+      const doDelete = Math.random() < 0.5;
+
+      if (doDelete && placedSprites.length > 0) {
+        moveBotCursorTo(lastHumanAction.x, lastHumanAction.y, 'delete', null, () => {
+          deleteSprite(lastHumanAction.x, lastHumanAction.y, true);
+        });
+        return;
+      }
+
+      const categories = [...new Set(Object.values(spriteSizes).map(s => s.c))];
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+
+      //const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory);
+      const options = Object.keys(spriteSizes).filter(t => spriteSizes[t].c === randomCategory && t !== 'path');
+
+      for (let i = 0; i < 10; i++) {
+        const type = options[Math.floor(Math.random() * options.length)];
+        const x = Math.floor(Math.random() * GRID_SIZE);
+        const y = Math.floor(Math.random() * GRID_SIZE);
+
+        if (canPlace(type, x, y)) {
+          return moveBotCursorTo(x, y, 'place', type, () => {
+            placeSprite(type, x, y, true);
+          });
+        }
+      }
+
+      botBusy = false;
+    }
+
+    function moveBotCursorTo(gridX, gridY, mode, type, callback) {
+      if (mode === 'place' && !botPlaceReady) {
+        // fallback: skip animation but still place
+        if (callback) callback();
+        botBusy = false;
+        return;
+      }
+      const baseX = gridX * CELL_SIZE;
+      const baseY = gridY * CELL_SIZE;
+
+      // hide both first
+      botPlaceCursor.visible(false);
+      botDeleteCursor.visible(false);
+
+      let cursor;
+
+      if (mode === 'place') {
+        cursor = botPlaceCursor;
+      } else {
+        cursor = botDeleteCursor;
+      }
+
+      // always 1 tile size
+      cursor.width(CELL_SIZE);
+      cursor.height(CELL_SIZE);
+
+      // ---------- CURRENT POSITION (already initialized to center)
+      const startX = cursor.x();
+      const startY = cursor.y();
+
+      // ---------- MISALIGNMENT (small offset)
+      const offsetX = (Math.random() - 0.5) * 6; // -3 to +3 px
+      const offsetY = (Math.random() - 0.5) * 6;
+
+      const targetX = baseX + offsetX;
+      const targetY = baseY + offsetY;
+
+      cursor.scale({ x: 1, y: 1 });
+      cursor.visible(true);
+
+      // ---------- PRE-MOVE HESITATION ----------
+      const preDelay = [80, 120, 160][Math.floor(Math.random() * 3)];
+
+      setTimeout(() => {
+        cursor.visible(true);
+        // ---------- MOVE (slightly imperfect)
+        cursor.to({
+          x: targetX,
+          y: targetY,
+          duration: 0.35,
+          easing: Konva.Easings.EaseInOut,
+          onFinish: () => {
+
+            // ---------- MICRO CORRECTION (snap into place)
+            cursor.to({
+              x: baseX,
+              y: baseY,
+              duration: 0.08,
+              onFinish: () => {
+
+                // ---------- HOVER DELAY ----------
+                const hoverDelay = [120, 180, 250][Math.floor(Math.random() * 3)];
+
+                setTimeout(() => {
+
+                  // ---------- CLICK ----------
+                  cursor.to({
+                    scaleX: 0.8,
+                    scaleY: 0.8,
+                    duration: 0.08,
+                    onFinish: () => {
+                      cursor.to({
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 0.08,
+                        onFinish: () => {
+
+                          cursor.visible(false);
+
+                          if (callback) callback();
+
+                          botBusy = false;
+                        }
+                      });
+                    }
+                  });
+
+                }, hoverDelay);
+              }
+            });
+
+          }
+        });
+
+      }, preDelay);
+    }
+
+    // ---------- FIXED KONVA CLICK DETECTION ----------
+    // Must set listening(true) and pointer-events must not be blocked
+    bgLayer.listening(true);
+    itemLayer.listening(true);
+    stage.listening(true);
+
+    stage.on('pointerdown', () => {
+      const pos = stage.getPointerPosition();
+      if (!pos) return; // safety
+
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Tool: erase
+      if (selectedTool === 'erase') {
+        deleteSprite(gridX, gridY);
+        return;
+      }
+
+      // Tool: pick
+      if (selectedTool === 'pick') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          const src = existing.image().src;
+          const type = Object.keys(spriteImages).find(t => spriteImages[t] === src);
+
+          if (type) {
+            clearSelectedUIitem();
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            selectedType = type;
+          }
+        }
+        return;
+      }
+
+      // Placement mode
+      if (selectedType === 'path') {
+        console.log("placing path");
+        placePath(selectedType, gridX, gridY);
+        return;
+      }
+
+      if (selectedType) {
+        console.log("placing elements");
+        deleteSprite(gridX, gridY);
+        placeSprite(selectedType, gridX, gridY);
+      }
+    });
+
+    function updateCursor() {
+      const container = document.getElementById('stage-container');
+
+      if (selectedTool === 'erase') {
+        container.style.cursor = "url('assets/cursor-erase-human.png') 16 16, auto";
+      } else {
+        container.style.cursor = "url('assets/cursor-place-human.png') 16 16, auto";
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+=====
+

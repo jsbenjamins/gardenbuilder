@@ -1,0 +1,27 @@
+prompt for art, gemini
+
+create pixelart style elements into one tileset image for a park/garden builder type of cosy game. 
+Requirements: 
+- top-down view
+- elements are minimally 32 pixels in width and 32 pixels in height, with a maximum of 64 x 96 or 96 x 64
+- ideally with a transparant background, or easily removable with photoshop or similar. 
+- elements have an orientation that fits clear north-sout-east-west orientations
+
+Elements, suggested size (width x height) and orientation:
+- bench (64 x 32 pixels), orientation: facing north
+- bench (64 x 32 pixels), orientation: facing south
+- bench (32 x 64 pixels), orientation: facing west
+- bench (32 x 64 pixels), orientation: facing north
+- halfpipe (96 x 64 pixels), orientation: high sides of the halfpipe on west and east side
+- chess table (table should be square) with chairs on either side (64 x 32 pixels), orientation: chairs on west and east side.
+- food truck or cart (64 x 64 pixels), orientation: facing west
+- food truck or cart (64 x 64 pixels), orientation: facing east
+- fountain (64 x 64 pixels), orientation: water would fall to the south side.
+- playground element, see-saw (64 x 32 pixels), orienation: sides face east and west
+- playground element, slide (64 x 64 pixels), orienation: slide faces east
+- playground element, slide (64 x 64 pixels), orienation: slide faces south
+- playground element, slide (64 x 64 pixels), orienation: slide faces west
+- playground element, soccer goal (64 x 32 pixels), orienation: open side of goal faces north
+- playground element, soccer goal (64 x 32 pixels), orienation: open side of goal faces south
+- white stone statues (32 x 64 pixels), orientation: face side of satues faces south.
+ 

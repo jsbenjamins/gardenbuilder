@@ -1,0 +1,264 @@
+I have changed the website a bit, but the code below (see between the ===== lines) is a good working version for me on which I would like now to continue to build. Ignore any previously generated code before april 15th 2026, but keep the idea of an online garden builder where we place and delete objects and a a bot very human-like builds with the player (most of the time)! 
+
+Next in the gardenbuilder, I want to have an option to build paths in the garden.
+Requirements:
+- Path should be just one extra "item" to choose besides the existing bushes and trees.
+- Path build history/tracjectory should be kept such that a path can be extended logically according to a tileset of tiles that consists of 16 available tiles where on either north, east,south or west side of the tile teh path can be continued. Current path building direction should also be kept track of from the second path tile pplacement onwards.
+- the first tile used for starting a path is always closedA. When clicking directly north of the  start tile, the start tile should change to change to openN and the new tile should be openS such that the two placed tiles connect nicely. If the tile click (i.e. third path tile) is also placed directly north of the current path the starting tile stays the same, the second tile become openNS and the third tile will be an openS. If the forth tile is also north, the third tile should change to openNS and the fourth will be openS etc. Likewise if the fourth tile would be placed directly east of the third tile. the third tile would become openSE and the forth would be openE.
+- when there is  empty tile space in between two consecutively placed tiles, it should start with a closedA starting tile again 
+The working code between lines:
+=====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+    #sidebar {
+      width: 220px;
+      background: #f3f3f3;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    .selected {
+      border-color: #4caf50;
+      box-shadow: 0 0 5px #4caf50;
+    }
+    #tools { display: flex; gap: 5px; }
+    #stage-container { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h3>Tools</h3>
+    <div id="tools">
+      <div class="tool" data-tool="erase">🧹</div>
+      <div class="tool" data-tool="pick">👆</div>
+    </div>
+
+    <h3>Elements</h3>
+    <div class="item" data-type="tree1"><img src="assets/tree1.png" width="40"></div>
+    <div class="item" data-type="tree2"><img src="assets/tree2.png" width="40"></div>
+    <div class="item" data-type="tree3"><img src="assets/tree3.png" width="40"></div>
+    <div class="item" data-type="bush1"><img src="assets/bush1.png" width="40"></div>
+    <div class="item" data-type="bush2"><img src="assets/bush2.png" width="40"></div>
+    <div class="item" data-type="bush3"><img src="assets/bush3.png" width="40"></div>
+  </div>
+
+  <div id="stage-container"></div>
+
+  <script>
+    const GRID_SIZE = 15;
+    const CELL_SIZE = 32;
+    const width = GRID_SIZE * CELL_SIZE;
+    const height = GRID_SIZE * CELL_SIZE;
+
+    const grassTiles = [
+      'assets/grass1.png',
+      'assets/grass2.png',
+      'assets/grass3.png',
+      'assets/grass4.png'
+    ];
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width,
+      height
+    });
+
+    const bgLayer = new Konva.Layer();
+    const itemLayer = new Konva.Layer();
+    stage.add(bgLayer);
+    stage.add(itemLayer);
+
+    // Multi-tile size and category definitions (1 = trees, 2 = bushes, to be extended later)
+    const spriteSizes = {
+      tree1: { w: 2, h: 2, c: 1},
+      tree2: { w: 2, h: 2, c: 1},
+      tree3: { w: 2, h: 3, c: 1},
+      bush1: { w: 1, h: 1, c: 2},
+      bush2: { w: 1, h: 1, c: 2},
+      bush3: { w: 1, h: 1, c: 2 },
+    };
+
+    // Grass background
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const img = new Image();
+        img.src = grassTiles[Math.floor(Math.random() * grassTiles.length)];
+
+        const tile = new Konva.Image({
+          x: x * CELL_SIZE,
+          y: y * CELL_SIZE,
+          width: CELL_SIZE,
+          height: CELL_SIZE
+        });
+
+        img.onload = () => {
+          tile.image(img);
+          bgLayer.draw();
+        };
+
+        bgLayer.add(tile);
+      }
+    }
+
+    let selectedType = null;
+    let selectedTool = null;
+    let zCounter = 1;
+
+    // No cross-clearing!
+    function clearSelectedUItool() {
+      document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
+    }
+    function clearSelectedUIitem() {
+      document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    }
+
+    // Tool selection
+    document.querySelectorAll('.tool').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.dataset.tool;
+        selectedType = null; // logical only
+      });
+    });
+
+    // Item selection
+    document.querySelectorAll('.item').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.add('selected');
+        selectedType = el.dataset.type;
+        selectedTool = null; // logical only
+      });
+    });
+
+    const spriteImages = {
+      tree1: 'assets/tree1.png',
+      tree2: 'assets/tree2.png',
+      tree3: 'assets/tree3.png',
+      bush1: 'assets/bush1.png',
+      bush2: 'assets/bush2.png',
+      bush3: 'assets/bush3.png',
+    };
+
+    // ---------- MULTI-TILE PLACEMENT ----------
+    function placeSprite(type, gridX, gridY) {
+      const img = new Image();
+      img.src = spriteImages[type];
+      
+      // 'wat' is pointer to element size and category
+      img.onload = () => {
+        const wat = spriteSizes[type];
+        const widthPx = wat.w * CELL_SIZE;
+        const heightPx = wat.h * CELL_SIZE;
+
+        const sprite = new Konva.Image({
+          id: `cell-${gridX}-${gridY}`,
+          x: gridX * CELL_SIZE,
+          y: gridY * CELL_SIZE,
+          width: widthPx,
+          height: heightPx,
+          image: img,
+          draggable: false,
+          zIndex: zCounter++
+        });
+
+        sprite.scale({ x: 0.1, y: 0.1 });
+        itemLayer.add(sprite);
+
+        sprite.to({
+          scaleX: 1,
+          scaleY: 1,
+          duration: 0.15,
+          easing: Konva.Easings.EaseOut
+        });
+
+        itemLayer.draw();
+      };
+    }
+
+    function deleteSprite(gridX, gridY) {
+      // match any sprite occupying the top-left tile (only how we store them)
+      const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+      if (!existing) return;
+
+      existing.to({
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 0.15,
+        onFinish: () => {
+          existing.destroy();
+          zCounter = Math.max(1, zCounter - 1);
+          itemLayer.draw();
+        }
+      });
+    }
+
+    // ---------- FIXED KONVA CLICK DETECTION ----------
+    // Must set listening(true) and pointer-events must not be blocked
+    bgLayer.listening(true);
+    itemLayer.listening(true);
+    stage.listening(true);
+
+    stage.on('pointerdown', () => {
+      const pos = stage.getPointerPosition();
+      if (!pos) return; // safety
+
+      const gridX = Math.floor(pos.x / CELL_SIZE);
+      const gridY = Math.floor(pos.y / CELL_SIZE);
+
+      // Tool: erase
+      if (selectedTool === 'erase') {
+        deleteSprite(gridX, gridY);
+        return;
+      }
+
+      // Tool: pick
+      if (selectedTool === 'pick') {
+        const existing = itemLayer.findOne(`#cell-${gridX}-${gridY}`);
+        if (existing) {
+          const src = existing.image().src;
+          const type = Object.keys(spriteImages).find(t => spriteImages[t] === src);
+
+          if (type) {
+            clearSelectedUIitem();
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            selectedType = type;
+          }
+        }
+        return;
+      }
+
+      // Placement mode
+      if (selectedType) {
+        deleteSprite(gridX, gridY);
+        placeSprite(selectedType, gridX, gridY);
+      }
+    });
+  </script>
+</body>
+</html>
+=====
+
+While working on this with me, keep your tone professional without the overly positive vibes you usually use. 

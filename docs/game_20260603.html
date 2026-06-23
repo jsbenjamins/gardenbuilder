@@ -1273,52 +1273,6 @@
       return count === 1;
     }
 
-    function getBenchCandidatesNearPath(x, y) {
-      const conn = getConnections(x, y);
-      const candidates = [];
-
-      const horizontal = conn.E || conn.W;
-      const vertical   = conn.N || conn.S;
-
-      // East-West path
-      if (horizontal) {
-
-        // bench below path
-        candidates.push({
-          type: 'rot1', // benchN
-          x,
-          y: y + 1
-        });
-
-        // bench above path
-        candidates.push({
-          type: 'rot3', // benchS
-          x,
-          y: y - 1
-        });
-      }
-
-      // North-South path
-      if (vertical) {
-
-        // bench right of path
-        candidates.push({
-          type: 'rot4', // benchW
-          x: x + 1,
-          y
-        });
-
-        // bench left of path
-        candidates.push({
-          type: 'rot2', // benchE
-          x: x - 1,
-          y
-        });
-      }
-
-      return candidates;
-    }
-
     // ------------------ END PATH SYSTEM ----------
 
     function canPlace(type, x, y) {
@@ -1867,42 +1821,6 @@
               Math.abs(p.y - y) <= BOT_LOCAL_RADIUS
             );
 
-          // if (nearbyPaths.length) {
-
-          //   const chosen =
-          //     nearbyPaths[
-          //       Math.floor(Math.random() * nearbyPaths.length)
-          //     ];
-
-          //   // const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
-
-          //   for (let i = 0; i < 8; i++) {
-
-          //     const bench =
-          //       benchTypes[
-          //         Math.floor(Math.random() * benchTypes.length)
-          //       ];
-
-          //     const bx =
-          //       chosen.x + Math.floor(Math.random() * 3) - 1;
-
-          //     const by =
-          //       chosen.y + Math.floor(Math.random() * 3) - 1;
-
-          //     if (canPlace(bench, bx, by)) {
-
-          //       return moveBotCursorTo(
-          //         bx,
-          //         by,
-          //         'place',
-          //         bench,
-          //         () => {
-          //           placeSprite(bench, bx, by, true);
-          //         }
-          //       );
-          //     }
-          //   }
-          // }
           if (nearbyPaths.length) {
 
             const chosen =
@@ -1910,32 +1828,33 @@
                 Math.floor(Math.random() * nearbyPaths.length)
               ];
 
-            const candidates = getBenchCandidatesNearPath(
-              chosen.x,
-              chosen.y
-            ).filter(c => canPlace(c.type, c.x, c.y));
+            const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
 
-            if (candidates.length) {
+            for (let i = 0; i < 8; i++) {
 
               const bench =
-                candidates[
-                  Math.floor(Math.random() * candidates.length)
+                benchTypes[
+                  Math.floor(Math.random() * benchTypes.length)
                 ];
 
-              return moveBotCursorTo(
-                bench.x,
-                bench.y,
-                'place',
-                bench.type,
-                () => {
-                  placeSprite(
-                    bench.type,
-                    bench.x,
-                    bench.y,
-                    true
-                  );
-                }
-              );
+              const bx =
+                chosen.x + Math.floor(Math.random() * 3) - 1;
+
+              const by =
+                chosen.y + Math.floor(Math.random() * 3) - 1;
+
+              if (canPlace(bench, bx, by)) {
+
+                return moveBotCursorTo(
+                  bx,
+                  by,
+                  'place',
+                  bench,
+                  () => {
+                    placeSprite(bench, bx, by, true);
+                  }
+                );
+              }
             }
           }
         }
@@ -2089,7 +2008,8 @@
           'bot'
         );
         if (!success) {
-          return botImperfect();
+          botBusy = false;
+          endBotTurn();
         }
       });
     }

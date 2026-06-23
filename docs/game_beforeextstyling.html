@@ -10,10 +10,207 @@
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    body { 
+      margin: 0; 
+      display: flex; 
+      height: 100vh;
+      background: #e2ffad;
+      font-family: "Bitcount", system-ui;
+      font-optical-sizing: auto;
+      font-weight: 400;
+      font-style: normal;
+      font-variation-settings:
+        "slnt" 0,
+        "CRSV" 0.5,
+        "ELSH" 0,
+        "ELXP" 0;
+    }  
+    #sidebar {
+      width: 300px;
+      background: #e2ffad;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .item, .tool {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: white;
+      font-size: 32px;
+    }
+    h3 {
+      font-weight: 400;
+    }
+    #beurt {
+      padding: 10px;
+      min-height: 64px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      font-size: 24px;
+      box-sizing: border-box;
+    }
+
+    #beurt .turn-avatar {
+      width: 64px;
+      height: 64px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    #beurt .turn-label {
+      display: flex;
+      align-items: center;
+    }
+    .selected {
+      border: 4px solid;
+      border-color: rgb(255, 187, 0);
+      /* box-shadow: 0 0 5px #997700; */
+    }
+    .bot-selected {
+      border: 4px solid;
+      border-color: #0000ff;
+      /* box-shadow: 0 0 8px #000099; */
+    }
+    .botplayer {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      border: 4px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgb(120, 145, 85);
+      font-size: 32px;
+      border-color: #0000ff;
+      /* box-shadow: 0 0 5px #000099; */
+    }
+    #tools { display: flex; gap: 5px; }
+    #stage-container {
+      flex: 1;
+      cursor: url('assets/cursor-place-human.png') 16 16, auto;
+    }
+    #tooltip {
+      position: fixed;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      z-index: 9999;
+      white-space: nowrap;
+    }
+
+    #game-timer {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 28px;
+      z-index: 5000;
+      letter-spacing: 1px;
+    }
+
+    #end-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    #end-box {
+      background: linear-gradient(
+        135deg,
+        #ffe066,
+        #ffb703,
+        #8ecae6,
+        #90be6d
+      );
+      border-radius: 28px;
+      padding: 50px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(0,0,0,0.35);
+      max-width: 700px;
+    }
+
+    #end-box h1 {
+      margin: 0 0 30px 0;
+      font-size: 56px;
+      line-height: 1.1;
+      color: white;
+      text-shadow:
+        3px 3px 0 rgba(0,0,0,0.25);
+      font-weight: 500;
+    }
+
+    #end-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    #end-buttons button {
+      font-family: "Bitcount", system-ui;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 24px;
+      cursor: pointer;
+      background: white;
+      color: black;
+      transition: transform 0.12s;
+    }
+
+    #end-buttons button:hover {
+      transform: scale(1.05);
+    }
+
+    #end-box {
+      animation: endPop 0.5s ease-out;
+    }
+
+    @keyframes endPop {
+      0% {
+        transform: scale(0.6) rotate(-4deg);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.08) rotate(2deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1) rotate(0deg);
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="sidebar">
-    <h3>Jouw acties</h3>
+    <h3>Jouw tools</h3>
     <div id="tools">
       <div class="tool selected" data-tool="pick" data-name="Bouw/plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
       <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
@@ -21,7 +218,7 @@
 
     <h3>Wie is aan de beurt?</h3>
     <div id="beurt">
-      <span class="turn-label">Je bouwmaatje</span>
+      <span class="turn-label">--</span>
       <img class="turn-avatar" id="playerAvatarImg" src="assets/players/player01.png">
     </div>
 
@@ -73,28 +270,9 @@
       </tbody>
     </table>
     
-    <h3>Geluid</h3>
-
-    <div id="music-controls">
-      <button data-music="bg1">Platteland</button>
-      <button data-music="bg2">Rustig</button>
-      <button data-music="bg3">Vrolijk</button>
-      <button id="mute-btn">Sst...</button>
-    </div>
   </div>
 
-  <div id="game-timer">05:00</div> <!-- 5:00 for real-->
-
-  <div id="start-overlay">
-    <div id="start-box">
-      <h1>Bouw samen een park</h1>
-      <p>
-          Je bouwmaatje zit al klaar, druk op start om te gaan bouwen met z'n tweeën.
-      </p>
-
-      <button id="start-btn">Start</button>
-    </div>
-  </div>
+  <div id="game-timer">01:00</div> <!-- 5:00 for real-->
 
   <div id="end-overlay">
     <div id="end-box">
@@ -117,12 +295,12 @@
     const width = GRID_SIZE * CELL_SIZE;
     const height = GRID_SIZE * CELL_SIZE;
     
-    let currentTurn = 'bot'; // 'human' | 'bot'
+    let currentTurn = 'human'; // 'human' | 'bot'
     let turnNumber = 1;
 
     let gameEnded = false;
 
-    const GAME_DURATION_SECONDS = 300; // 300 for real
+    const GAME_DURATION_SECONDS = 60; // 300 for real
     let remainingSeconds = GAME_DURATION_SECONDS;
 
     const selectedAvatar = localStorage.getItem('playerAvatar');
@@ -130,21 +308,6 @@
 
     const TURN_DELAY_MIN = 2000;
     const TURN_DELAY_MAX = 5000;
-
-    let currentMusic = null;
-    let musicEnabled = true;
-    let musicUnlocked = false;
-    let currentMusicKey = 'bg1';
-
-    const musicTracks = {
-      bg1: 'assets/music/bg1.mp3',
-      bg2: 'assets/music/bg2.mp3',
-      bg3: 'assets/music/bg3.mp3',
-
-      done1: 'assets/music/done1.mp3',
-      done2: 'assets/music/done2.mp3',
-      done3: 'assets/music/done3.mp3'
-    };
 
     const grassTiles = [
       'assets/grass1.png',
@@ -232,28 +395,6 @@
 
     const BOT_SYMMETRY_STRENGTH = 0.08; // 0 → off, 2 → very strong
 
-    // human cursor
-    const humanCursor = new Konva.Image({
-      width: CELL_SIZE,
-      height: CELL_SIZE,
-      visible: false,
-      listening: false
-    });
-
-    const humanPlaceImg = new Image();
-    humanPlaceImg.src = 'assets/human-place.png';
-    humanPlaceImg.onload = () => {
-      humanCursor.image(humanPlaceImg);
-    };
-  
-    const humanDeleteImg = new Image();
-    humanDeleteImg.src = 'assets/human-erase.png';
-    // humanDeleteImg.onload = () => {
-    //   humanCursor.image(humanPlaceImg);
-    // };
-
-    cursorLayer.add(humanCursor);
-
     // bot cursor
     const botPlaceCursor = new Konva.Image({
       x: 0,
@@ -297,10 +438,6 @@
 
     cursorLayer.add(botPlaceCursor);
     cursorLayer.add(botDeleteCursor);
-
-    // completion badge in cursor layer
-    const completeBadgeImg = new Image();
-    completeBadgeImg.src = 'assets/completethisbadge.png';  
 
     // set bot to not busy at start
     let botBusy = false;
@@ -425,35 +562,6 @@
 
     });
 
-    // start timer and music on click
-    document.getElementById('start-btn').addEventListener('click', () => {
-      document.getElementById('start-overlay').style.display = 'none';
-      buildGrass();
-      playMusic('bg1', { fadeIn: true });
-      setTimeout(() => {
-        startGameTimer();
-        botOpeningMove();
-      }, 3000);
-    });
-
-    // link music buttons
-    document.querySelectorAll('#music-controls button[data-music]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        // playMusic(btn.dataset.music);
-        playMusic(btn.dataset.music, { fadeIn: true });
-      });
-    });
-
-    document.getElementById('mute-btn').addEventListener('click', () => {
-
-      musicEnabled = !musicEnabled;
-      if (currentMusic) {
-        currentMusic.volume = musicEnabled ? 0.5 : 0;
-      }
-      document.getElementById('mute-btn').innerText =
-        musicEnabled ? 'Sst...' : 'Muziek graag!';
-    });
-
     // ==== timer stuff
     const timerEl = document.getElementById('game-timer');
 
@@ -486,104 +594,12 @@
       }, 1000);
     }
 
-    // AUDIO player stuff
-    function fadeAudio(audio, targetVolume, duration = 1200, onComplete) {
-      const startVolume = audio.volume;
-      const steps = 30;
-      const stepTime = duration / steps;
-      let i = 0;
-
-      const delta = (targetVolume - startVolume) / steps;
-
-      const interval = setInterval(() => {
-        i++;
-        audio.volume = Math.max(0, Math.min(1, audio.volume + delta));
-
-        if (i >= steps) {
-          clearInterval(interval);
-          audio.volume = targetVolume;
-          if (onComplete) onComplete();
-        }
-      }, stepTime);
-    }
-
-    function playMusic(trackKey, { fadeIn = true } = {}) {
-
-      musicUnlocked = true;
-      currentMusicKey = trackKey;
-
-      // stop previous music cleanly
-      if (currentMusic) {
-        const old = currentMusic;
-
-        fadeAudio(old, 0, 400, () => {
-          old.pause();
-          old.currentTime = 0;
-        });
-      }
-
-      const audio = new Audio(musicTracks[trackKey]);
-      audio.loop = true;
-      audio.volume = 0;
-
-      currentMusic = audio;
-
-      const playPromise = audio.play();
-
-      if (playPromise) {
-        playPromise.catch(err => {
-          console.log("Audio blocked:", err);
-        });
-      }
-
-      const targetVolume = musicEnabled ? 0.5 : 0;
-
-      if (fadeIn) {
-        fadeAudio(audio, targetVolume, 1200);
-      } else {
-        audio.volume = targetVolume;
-      }
-    }
-
-    // END game functions
-    function playEndMusic() {
-
-      const endKey = currentMusicKey.replace('bg', 'done');
-
-      const endSrc = musicTracks[endKey] || musicTracks.done1;
-
-      // fade out current bg music
-      if (currentMusic) {
-        const old = currentMusic;
-
-        fadeAudio(old, 0, 500, () => {
-          old.pause();
-          old.currentTime = 0;
-        });
-      }
-
-      // play matching end track
-      const audio = new Audio(endSrc);
-
-      audio.loop = false;
-      audio.volume = musicEnabled ? 0.7 : 0;
-
-      const playPromise = audio.play();
-
-      if (playPromise) {
-        playPromise.catch(err => {
-          console.log("End music blocked:", err);
-        });
-      }
-    }
-
+    // END game function
     function endGame() {
 
       if (gameEnded) return;
 
       gameEnded = true;
-
-      humanCursor.visible(false);
 
       currentTurn = 'ended';
 
@@ -604,11 +620,17 @@
       });
 
       // export image BEFORE overlay appears
-      // temporarily hide overlays/highlights <-- hide full layers!!
-      ownershipLayer.visible(false);
-      highlightLayer.visible(false);
-      cursorLayer.visible(false);
+      // temporarily hide overlays/highlights
+      humanHighlight.visible(false);
+      botHighlight.visible(false);
+      previewRect.visible(false);
+      pathPreview.visible(false);
 
+      botPlaceCursor.visible(false);
+      botDeleteCursor.visible(false);
+
+      highlightLayer.draw();
+      cursorLayer.draw();
 
       // export clean image
       const dataURL = stage.toDataURL({
@@ -617,22 +639,15 @@
 
       // restore visuals (optional since game ended,
       // but keeps internal state clean)
-      ownershipLayer.visible(true);
-      highlightLayer.visible(true);
-      cursorLayer.visible(true);
+      humanHighlight.visible(true);
+      botHighlight.visible(true);
 
-      ownershipLayer.draw();
       highlightLayer.draw();
       cursorLayer.draw();
 
       // show overlay
       document.getElementById('end-overlay').style.display = 'flex';
-      playEndMusic();
-
-      setTimeout(() => {
-        document.getElementById('end-overlay').style.display = 'flex';
-        launchConfetti();
-      }, 800);
+      launchConfetti();
 
       // download button
       document.getElementById('download-btn').onclick = () => {
@@ -707,9 +722,8 @@
     }
     // ==== end timer stuff
     
-    //buildGrass();
-    updateTurnUI();
-    // startGameTimer();
+    buildGrass();
+    startGameTimer();
 
     // Building: grass background
     function buildGrass() {
@@ -784,20 +798,6 @@
       console.log("ending Bot turn");
       clearBotSelectTool();
       updateTurnUI();
-    }
-
-    function botOpeningMove() {
-      const treeTypes = ['tree1', 'tree2', 'tree3'];
-
-      const type =
-        treeTypes[Math.floor(Math.random() * treeTypes.length)];
-
-      const x = 4 + Math.floor(Math.random() * 17);
-      const y = 4 + Math.floor(Math.random() * 17);
-
-      moveBotCursorTo(x, y, 'place', type, () => {
-        placeSprite(type, x, y, true);
-      });
     }
 
     // show turn history
@@ -1033,17 +1033,6 @@
       return true;
     }
 
-    function getEndpointDirection(x, y) {
-      const conn = getConnections(x, y);
-
-      if (conn.N) return { dx: 0, dy: -1 };
-      if (conn.S) return { dx: 0, dy: 1 };
-      if (conn.E) return { dx: 1, dy: 0 };
-      if (conn.W) return { dx: -1, dy: 0 };
-
-      return null;
-    }
-
     function deletePathSection(gridX, gridY, isBot=false) {
 
       const sectionIndex = pathSections.findIndex(section =>
@@ -1271,52 +1260,6 @@
         (conn.W ? 1 : 0);
 
       return count === 1;
-    }
-
-    function getBenchCandidatesNearPath(x, y) {
-      const conn = getConnections(x, y);
-      const candidates = [];
-
-      const horizontal = conn.E || conn.W;
-      const vertical   = conn.N || conn.S;
-
-      // East-West path
-      if (horizontal) {
-
-        // bench below path
-        candidates.push({
-          type: 'rot1', // benchN
-          x,
-          y: y + 1
-        });
-
-        // bench above path
-        candidates.push({
-          type: 'rot3', // benchS
-          x,
-          y: y - 1
-        });
-      }
-
-      // North-South path
-      if (vertical) {
-
-        // bench right of path
-        candidates.push({
-          type: 'rot4', // benchW
-          x: x + 1,
-          y
-        });
-
-        // bench left of path
-        candidates.push({
-          type: 'rot2', // benchE
-          x: x - 1,
-          y
-        });
-      }
-
-      return candidates;
     }
 
     // ------------------ END PATH SYSTEM ----------
@@ -1575,40 +1518,14 @@
         itemLayer.draw();
 
         // track placement
-        let badge = null;
-        if (cat === 9) {
-
-          badge = new Konva.Image({
-            image: completeBadgeImg,
-            width: 64,
-            height: 64,
-            // top-right corner of object
-            x: (gridX + wat.w) * CELL_SIZE - 32,
-            y: gridY * CELL_SIZE - 16,
-            listening: false
-          });
-
-          cursorLayer.add(badge);
-
-          // gentle floating animation
-          badge.to({
-            y: badge.y() - 6,
-            duration: 0.8,
-            yoyo: true,
-            repeat: Infinity
-          });
-        }
-
         placedSprites.push({
           type,
           x: gridX,
           y: gridY,
           w: wat.w,
           h: wat.h,
-          sprite,
-          badge
-        });
-        cursorLayer.draw();    
+          sprite
+        });        
 
         // disable button for fun item after placing, except fountainand statue
         if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
@@ -1648,11 +1565,6 @@
       const obj = placedSprites[index];
       const type = obj.type;
       const cat = spriteSizes[type].c;
-
-      if (obj.badge) {
-        obj.badge.destroy();
-        cursorLayer.draw();
-      }
 
       obj.sprite.to({
         scaleX: 0.1,
@@ -1713,13 +1625,6 @@
         });
 
         // update stored type
-        if (obj.badge) {
-          obj.badge.destroy();
-          obj.badge = null;
-          cursorLayer.draw();
-        }
-
-        // update stored type
         obj.type = completedType;
       };
     }
@@ -1749,6 +1654,36 @@
       }
     }
 
+    // function runBotTurn() {
+    //   if (botBusy) return;
+
+    //   if (!lastHumanAction) {
+    //     console.log("whoops?");
+    //     endBotTurn();
+    //     return;
+    //   }
+
+    //   botBusy = true;
+
+    //   // ---------- FORCE FOLLOW FOR CATEGORY 9 ----------
+    //   if (
+    //     lastHumanAction.type &&
+    //     spriteSizes[lastHumanAction.type] &&
+    //     spriteSizes[lastHumanAction.type].c === 9
+    //   ) {
+    //     botFollow();
+    //     return;
+    //   }
+
+    //   // normal behavior
+    //   const logicalFollow = Math.random() < BOT_FOLLOW_CHANCE;
+
+    //   if (logicalFollow) {
+    //     botFollow();
+    //   } else {
+    //     botRandom();
+    //   }
+    // }
     function runBotTurn() {
       if (gameEnded) return;
       if (botBusy) return;
@@ -1867,42 +1802,6 @@
               Math.abs(p.y - y) <= BOT_LOCAL_RADIUS
             );
 
-          // if (nearbyPaths.length) {
-
-          //   const chosen =
-          //     nearbyPaths[
-          //       Math.floor(Math.random() * nearbyPaths.length)
-          //     ];
-
-          //   // const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
-
-          //   for (let i = 0; i < 8; i++) {
-
-          //     const bench =
-          //       benchTypes[
-          //         Math.floor(Math.random() * benchTypes.length)
-          //       ];
-
-          //     const bx =
-          //       chosen.x + Math.floor(Math.random() * 3) - 1;
-
-          //     const by =
-          //       chosen.y + Math.floor(Math.random() * 3) - 1;
-
-          //     if (canPlace(bench, bx, by)) {
-
-          //       return moveBotCursorTo(
-          //         bx,
-          //         by,
-          //         'place',
-          //         bench,
-          //         () => {
-          //           placeSprite(bench, bx, by, true);
-          //         }
-          //       );
-          //     }
-          //   }
-          // }
           if (nearbyPaths.length) {
 
             const chosen =
@@ -1910,32 +1809,33 @@
                 Math.floor(Math.random() * nearbyPaths.length)
               ];
 
-            const candidates = getBenchCandidatesNearPath(
-              chosen.x,
-              chosen.y
-            ).filter(c => canPlace(c.type, c.x, c.y));
+            const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
 
-            if (candidates.length) {
+            for (let i = 0; i < 8; i++) {
 
               const bench =
-                candidates[
-                  Math.floor(Math.random() * candidates.length)
+                benchTypes[
+                  Math.floor(Math.random() * benchTypes.length)
                 ];
 
-              return moveBotCursorTo(
-                bench.x,
-                bench.y,
-                'place',
-                bench.type,
-                () => {
-                  placeSprite(
-                    bench.type,
-                    bench.x,
-                    bench.y,
-                    true
-                  );
-                }
-              );
+              const bx =
+                chosen.x + Math.floor(Math.random() * 3) - 1;
+
+              const by =
+                chosen.y + Math.floor(Math.random() * 3) - 1;
+
+              if (canPlace(bench, bx, by)) {
+
+                return moveBotCursorTo(
+                  bx,
+                  by,
+                  'place',
+                  bench,
+                  () => {
+                    placeSprite(bench, bx, by, true);
+                  }
+                );
+              }
             }
           }
         }
@@ -2017,6 +1917,79 @@
       );
     }
 
+    // this will not be used anymore
+    // function botFollowPath() {
+    //   console.log("reached botFollowPath");
+
+    //   if (!currentPathDirection || !lastPathTile || !lastHumanAction) {
+    //     console.log("no direction");
+    //     botBusy = false;
+    //     return;
+    //   }
+
+    //   let dir = currentPathDirection;
+
+    //   // ---------- 1. RANDOM TURN ----------
+    //   const turnChance = 0.25;
+
+    //   if (Math.random() < turnChance) {
+    //     const directions = [
+    //       { dx: 0, dy: -1 }, // N
+    //       { dx: 1, dy: 0 },  // E
+    //       { dx: 0, dy: 1 },  // S
+    //       { dx: -1, dy: 0 }  // W
+    //     ];
+
+    //     const opposite = { dx: -dir.dx, dy: -dir.dy };
+
+    //     const options = directions.filter(d =>
+    //       !(d.dx === opposite.dx && d.dy === opposite.dy)
+    //     );
+
+    //     dir = options[Math.floor(Math.random() * options.length)];
+    //     currentPathDirection = dir; // update direction after turn
+    //   }
+
+    //   // ---------- 2. FOLLOW HUMAN POSITION (instead of lastPathTile) ----------
+    //   const { x, y } = lastHumanAction;
+
+    //   const nx = x + dir.dx;
+    //   const ny = y + dir.dy;
+
+    //   // ---------- 3. BOUNDS CHECK ----------
+    //   if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) {
+    //     botBusy = false;
+    //     return;
+    //   }
+
+    //   // ---------- 4. STOP IF PATH ALREADY EXISTS ----------
+    //   if (pathTiles[key(nx, ny)]) {
+    //     botBusy = false;
+    //     return;
+    //   }
+
+    //   // ---------- 5. DON'T OVERWRITE OBJECTS ----------
+    //   const blocked = placedSprites.some(p =>
+    //     nx < p.x + p.w &&
+    //     nx + 1 > p.x &&
+    //     ny < p.y + p.h &&
+    //     ny + 1 > p.y
+    //   );
+
+    //   if (blocked) {
+    //     botBusy = false;
+    //     return;
+    //   }
+
+    //   // ---------- 6. PLACE ----------
+    //   moveBotCursorTo(nx, ny, 'place', 'path', () => {
+    //     placePath('path', nx, ny, true);
+
+    //     // update tracking so chain continues naturally
+    //     lastPathTile = { x: nx, y: ny };
+    //   });
+    // }
+
     function botFollowPathSection() {
       if (!pathSections.length) {
         botBusy = false;
@@ -2059,24 +2032,16 @@
       const startX = chosen.x;
       const startY = chosen.y;
 
-      const dir = getEndpointDirection(startX, startY);
-
-      if (!dir) {
-        // botBusy = false;
-        botImperfect();
-        return;
-      }
-
-      const endX = startX - dir.dx * len;
-      const endY = startY - dir.dy * len;
+      const endX = startX + dx * len;
+      const endY = startY + dy * len;
 
       // clamp to grid
       const cx = Math.max(0, Math.min(GRID_SIZE - 1, endX));
       const cy = Math.max(0, Math.min(GRID_SIZE - 1, endY));
 
       if (startX === cx && startY === cy) {
-        //botBusy = false;
-        botImperfect();
+        botBusy = false;
+        endBotTurn();
         return;
       }
 
@@ -2089,10 +2054,127 @@
           'bot'
         );
         if (!success) {
-          return botImperfect();
+          botBusy = false;
+          endBotTurn();
         }
       });
     }
+   
+    // // new botRandom, deletes at 30% when not following, places nature, fountain or bench along path.
+    // function botRandom() {
+    //   const rand = Math.random();
+
+    //   // ---------- 1. RANDOM DELETE (30% chance)
+    //   if (rand < 0.3 && placedSprites.length > 0) {
+
+    //     // allowed delete categories: 1,2,3,5 + fun7 (fountain) + fun11 (statue)
+    //     const deletable = placedSprites.filter(p => {
+    //       const c = spriteSizes[p.type].c;
+    //       return (
+    //         c === 1 || // trees
+    //         c === 2 || // bushes
+    //         c === 3 || // flowerbeds
+    //         c === 5 || // benches
+    //         p.type === 'fun7' || // fountain
+    //         p.type === 'fun11'   // statue
+    //       );
+    //     });
+
+    //     if (deletable.length > 0) {
+    //       const target = deletable[Math.floor(Math.random() * deletable.length)];
+
+    //       // pick a random tile inside the object (works with your improved deleteSprite)
+    //       const tx = target.x + Math.floor(Math.random() * target.w);
+    //       const ty = target.y + Math.floor(Math.random() * target.h);
+
+    //       return moveBotCursorTo(tx, ty, 'delete', null, () => {
+    //         deleteSprite(tx, ty, true);
+    //       });
+    //     }
+    //   }
+
+    //   // ---------- 2. PLACE NATURE (trees, bushes, flowerbeds)
+    //   if (rand < 0.7) {
+    //     const options = Object.keys(spriteSizes).filter(t => {
+    //       const c = spriteSizes[t].c;
+    //       return c === 1 || c === 2 || c === 3;
+    //     });
+
+    //     for (let i = 0; i < 10; i++) {
+    //       const type = options[Math.floor(Math.random() * options.length)];
+    //       const x = Math.floor(Math.random() * GRID_SIZE);
+    //       const y = Math.floor(Math.random() * GRID_SIZE);
+
+    //       if (canPlace(type, x, y)) {
+    //         return moveBotCursorTo(x, y, 'place', type, () => {
+    //           placeSprite(type, x, y, true);
+    //         });
+    //       }
+    //     }
+    //   }
+
+    //   // ---------- 3. RANDOM FOUNTAIN
+    //   if (rand < 0.80) {
+    //     for (let i = 0; i < 10; i++) {
+    //       const x = Math.floor(Math.random() * GRID_SIZE);
+    //       const y = Math.floor(Math.random() * GRID_SIZE);
+
+    //       if (canPlace('fun7', x, y)) {
+    //         return moveBotCursorTo(x, y, 'place', 'fun7', () => {
+    //           placeSprite('fun7', x, y, true);
+    //         });
+    //       }
+    //     }
+    //   }
+
+    //   // ---------- 4. BENCH PLACEMENT ALONG PATH
+    //   const pathKeys = Object.keys(pathTiles);
+
+    //   if (pathKeys.length === 0) {
+    //     botBusy = false;
+    //     return;
+    //   }
+
+    //   for (let i = 0; i < 20; i++) {
+    //     const k = pathKeys[Math.floor(Math.random() * pathKeys.length)];
+    //     const [x, y] = k.split('-').map(Number);
+    //     const conn = getConnections(x, y);
+
+    //     // ---------- horizontal path → place N/S bench
+    //     if (conn.E && conn.W) {
+    //       const belowFree = canPlace('rot1', x, y + 1);
+    //       const aboveFree = canPlace('rot3', x, y - 1);
+
+    //       if (Math.random() < 0.5 && belowFree) {
+    //         return moveBotCursorTo(x, y + 1, 'place', 'rot1', () => {
+    //           placeSprite('rot1', x, y + 1, true);
+    //         });
+    //       } else if (aboveFree) {
+    //         return moveBotCursorTo(x, y - 1, 'place', 'rot3', () => {
+    //           placeSprite('rot3', x, y - 1, true);
+    //         });
+    //       }
+    //     }
+
+    //     // ---------- vertical path → place E/W bench
+    //     if (conn.N && conn.S) {
+    //       const leftFree = canPlace('rot2', x - 1, y);
+    //       const rightFree = canPlace('rot4', x + 1, y);
+
+    //       if (Math.random() < 0.5 && leftFree) {
+    //         return moveBotCursorTo(x - 1, y, 'place', 'rot2', () => {
+    //           placeSprite('rot2', x - 1, y, true);
+    //         });
+    //       } else if (rightFree) {
+    //         return moveBotCursorTo(x + 1, y, 'place', 'rot4', () => {
+    //           placeSprite('rot4', x + 1, y, true);
+    //         });
+    //       }
+    //     }
+    //   }
+
+    //   botBusy = false;
+    // }
 
     function moveBotCursorTo(gridX, gridY, mode, type, callback) {
       if (mode === 'place' && !botPlaceReady) {
@@ -2218,16 +2300,6 @@
       const gridX = Math.floor(pos.x / CELL_SIZE);
       const gridY = Math.floor(pos.y / CELL_SIZE);
 
-      humanCursor.x(gridX * CELL_SIZE);
-      humanCursor.y(gridY * CELL_SIZE);
-      humanCursor.visible(true);
-
-      if (selectedTool==='erase'){
-        humanCursor.image(humanDeleteImg);
-      } else {
-        humanCursor.image(humanPlaceImg);
-      }
-
       // Only show for placement (not erase, not bot)
       if (!selectedType || selectedTool === 'erase' || (spriteSizes[selectedType]?.c === 4 && selectedType !== 'fun7' && selectedType !== 'fun11' && placedUniqueFun.has(selectedType))) {
         previewRect.visible(false);
@@ -2288,10 +2360,6 @@
 
     stage.on('pointerdown', () => {
       if (gameEnded) return;
-      // if (!musicUnlocked) {
-      //   musicUnlocked = true;
-      //   playMusic('bg1', { fadeIn: true });
-      // }
       if (currentTurn !== 'human') return;
       previewRect.visible(false);
       const pos = stage.getPointerPosition();

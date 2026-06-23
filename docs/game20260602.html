@@ -13,7 +13,7 @@
 </head>
 <body>
   <div id="sidebar">
-    <h3>Jouw acties</h3>
+    <h3>Jouw tools</h3>
     <div id="tools">
       <div class="tool selected" data-tool="pick" data-name="Bouw/plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
       <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
@@ -297,10 +297,6 @@
 
     cursorLayer.add(botPlaceCursor);
     cursorLayer.add(botDeleteCursor);
-
-    // completion badge in cursor layer
-    const completeBadgeImg = new Image();
-    completeBadgeImg.src = 'assets/completethisbadge.png';  
 
     // set bot to not busy at start
     let botBusy = false;
@@ -1273,52 +1269,6 @@
       return count === 1;
     }
 
-    function getBenchCandidatesNearPath(x, y) {
-      const conn = getConnections(x, y);
-      const candidates = [];
-
-      const horizontal = conn.E || conn.W;
-      const vertical   = conn.N || conn.S;
-
-      // East-West path
-      if (horizontal) {
-
-        // bench below path
-        candidates.push({
-          type: 'rot1', // benchN
-          x,
-          y: y + 1
-        });
-
-        // bench above path
-        candidates.push({
-          type: 'rot3', // benchS
-          x,
-          y: y - 1
-        });
-      }
-
-      // North-South path
-      if (vertical) {
-
-        // bench right of path
-        candidates.push({
-          type: 'rot4', // benchW
-          x: x + 1,
-          y
-        });
-
-        // bench left of path
-        candidates.push({
-          type: 'rot2', // benchE
-          x: x - 1,
-          y
-        });
-      }
-
-      return candidates;
-    }
-
     // ------------------ END PATH SYSTEM ----------
 
     function canPlace(type, x, y) {
@@ -1575,40 +1525,14 @@
         itemLayer.draw();
 
         // track placement
-        let badge = null;
-        if (cat === 9) {
-
-          badge = new Konva.Image({
-            image: completeBadgeImg,
-            width: 64,
-            height: 64,
-            // top-right corner of object
-            x: (gridX + wat.w) * CELL_SIZE - 32,
-            y: gridY * CELL_SIZE - 16,
-            listening: false
-          });
-
-          cursorLayer.add(badge);
-
-          // gentle floating animation
-          badge.to({
-            y: badge.y() - 6,
-            duration: 0.8,
-            yoyo: true,
-            repeat: Infinity
-          });
-        }
-
         placedSprites.push({
           type,
           x: gridX,
           y: gridY,
           w: wat.w,
           h: wat.h,
-          sprite,
-          badge
-        });
-        cursorLayer.draw();    
+          sprite
+        });        
 
         // disable button for fun item after placing, except fountainand statue
         if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
@@ -1648,11 +1572,6 @@
       const obj = placedSprites[index];
       const type = obj.type;
       const cat = spriteSizes[type].c;
-
-      if (obj.badge) {
-        obj.badge.destroy();
-        cursorLayer.draw();
-      }
 
       obj.sprite.to({
         scaleX: 0.1,
@@ -1711,13 +1630,6 @@
             itemLayer.draw();
           }
         });
-
-        // update stored type
-        if (obj.badge) {
-          obj.badge.destroy();
-          obj.badge = null;
-          cursorLayer.draw();
-        }
 
         // update stored type
         obj.type = completedType;
@@ -1867,42 +1779,6 @@
               Math.abs(p.y - y) <= BOT_LOCAL_RADIUS
             );
 
-          // if (nearbyPaths.length) {
-
-          //   const chosen =
-          //     nearbyPaths[
-          //       Math.floor(Math.random() * nearbyPaths.length)
-          //     ];
-
-          //   // const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
-
-          //   for (let i = 0; i < 8; i++) {
-
-          //     const bench =
-          //       benchTypes[
-          //         Math.floor(Math.random() * benchTypes.length)
-          //       ];
-
-          //     const bx =
-          //       chosen.x + Math.floor(Math.random() * 3) - 1;
-
-          //     const by =
-          //       chosen.y + Math.floor(Math.random() * 3) - 1;
-
-          //     if (canPlace(bench, bx, by)) {
-
-          //       return moveBotCursorTo(
-          //         bx,
-          //         by,
-          //         'place',
-          //         bench,
-          //         () => {
-          //           placeSprite(bench, bx, by, true);
-          //         }
-          //       );
-          //     }
-          //   }
-          // }
           if (nearbyPaths.length) {
 
             const chosen =
@@ -1910,32 +1786,33 @@
                 Math.floor(Math.random() * nearbyPaths.length)
               ];
 
-            const candidates = getBenchCandidatesNearPath(
-              chosen.x,
-              chosen.y
-            ).filter(c => canPlace(c.type, c.x, c.y));
+            const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
 
-            if (candidates.length) {
+            for (let i = 0; i < 8; i++) {
 
               const bench =
-                candidates[
-                  Math.floor(Math.random() * candidates.length)
+                benchTypes[
+                  Math.floor(Math.random() * benchTypes.length)
                 ];
 
-              return moveBotCursorTo(
-                bench.x,
-                bench.y,
-                'place',
-                bench.type,
-                () => {
-                  placeSprite(
-                    bench.type,
-                    bench.x,
-                    bench.y,
-                    true
-                  );
-                }
-              );
+              const bx =
+                chosen.x + Math.floor(Math.random() * 3) - 1;
+
+              const by =
+                chosen.y + Math.floor(Math.random() * 3) - 1;
+
+              if (canPlace(bench, bx, by)) {
+
+                return moveBotCursorTo(
+                  bx,
+                  by,
+                  'place',
+                  bench,
+                  () => {
+                    placeSprite(bench, bx, by, true);
+                  }
+                );
+              }
             }
           }
         }
@@ -2089,7 +1966,8 @@
           'bot'
         );
         if (!success) {
-          return botImperfect();
+          botBusy = false;
+          endBotTurn();
         }
       });
     }

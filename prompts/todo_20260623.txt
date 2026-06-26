@@ -1,0 +1,8 @@
+Notes:
+different styling for mobile vs desktop and large tablet
+
+mobile field on top, full width, buttons below, prevents scrolling
+
+desktop, field full height, arange buttons on the left accordingly
+
+bench placement goes wrong still (bench close to me rather than to path)

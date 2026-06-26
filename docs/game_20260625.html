@@ -12,10 +12,10 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <!-- <div id="debug-panel"></div> -->
+  <div id="debug-panel"></div>
   <div id="sidebar">
     <div id="mobile-topbar">
-      <h3 id="sb_tool">Jouw acties: <span id="selected-tool-label">Plaats</span></h3>
+      <h3 id="sb_tool">Jouw acties: <span id="selected-tool-label"></span></h3>
       <div id="tools">
         <div class="tool selected" data-tool="pick" data-name="Plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
         <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
@@ -145,7 +145,7 @@
 
     </div>
     
-    <h3 id="sb_sound">Geluid</h3>
+    <h3>Geluid</h3>
 
     <div id="music-controls">
       <button data-music="bg1">Platteland</button>
@@ -184,15 +184,11 @@
 
   <script>
     let foutopspoor = false;
-    let version = '2.1.1' // mobile fix first version 
+    let version = '2.0.0' // mobile fix first version 
     // determine whether touch screen device is present
     const isMobileUI = window.matchMedia('(pointer: coarse)').matches;
     window.addEventListener('load', () => { fitStageToContainer(); });
     window.addEventListener('resize', () => { fitStageToContainer(); });
-
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', fitStageToContainer);
-    }
 
     let mobileTouchStart = null;
     let mobileTouchCurrent = null;
@@ -251,17 +247,13 @@
 
       requestAnimationFrame(() => {
 
-        const container = document.getElementById('stage-container');
+        const container =
+          document.getElementById('stage-container');
 
         const availableWidth = container.clientWidth;
-        const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        const availableHeight = Math.min(
-            container.clientHeight,
-            viewportHeight
-        );
 
         const scale = Math.min(
-          availableHeight /height,
+          1,
           availableWidth / width
         );
 
@@ -273,17 +265,12 @@
         stage.width(width * scale);
         stage.height(height * scale);
 
-
         if (foutopspoor) {
-          const rect = stage.container().getBoundingClientRect();
-          const canvas = stage.container().querySelector("canvas");
           document.getElementById('debug-panel').innerHTML = `
+            containerWidth=${container.clientWidth}<br>
             containerHeight=${container.clientHeight}<br>
-            stageRectHeight=${rect.height}<br>
-            stageHeight=${stage.height()}<br>
-            stageScale=${stage.scaleX()}<br>
-            canvasWidth=${canvas.clientWidth}<br>
-            canvasHeight=${canvas.clientHeight}
+            scale=${scale}<br>
+            version, ${version}
           `;
         }
       });
@@ -356,7 +343,7 @@
 
     // set HUMAN into start mode
     let selectedType = null;
-    let selectedTool = 'pick';
+    let selectedTool = null;
     let lastTurnWasRecent = false; // path drawing behavior
     const placedUniqueFun = new Set(); // keep track of already placed fun items
 
@@ -570,10 +557,10 @@
         el.classList.add('selected');
         selectedType = el.dataset.type;
         selectedTool = el.dataset.tool;
-        if (isMobileUI) {
-          document.getElementById('selected-tool-label').innerText =
-            el.dataset.name || '';
-        }
+        // if (isMobileUI) {
+        //   document.getElementById('selected-tool-label').innerText =
+        //     el.dataset.name || '';
+        // }
         updateCursor();
       });
     });

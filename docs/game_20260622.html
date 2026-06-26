@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Park Game UU</title>
-  <link rel="stylesheet" type="text/css" href="styles/stylenew.css">
+  <link rel="stylesheet" type="text/css" href="styles/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
@@ -12,140 +12,68 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <!-- <div id="debug-panel"></div> -->
   <div id="sidebar">
-    <div id="mobile-topbar">
-      <h3 id="sb_tool">Jouw acties: <span id="selected-tool-label">Plaats</span></h3>
-      <div id="tools">
-        <div class="tool selected" data-tool="pick" data-name="Plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
-        <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
-      </div>
-
-      <h3 id="sb_turn">Wie is aan de beurt?</h3>
-      <div id="beurt">
-        <span class="turn-label" id="playerTurn">Je bouwmaatje</span>
-        <img class="turn-avatar" id="playerAvatarImg" src="assets/players/player01.png">
-      </div>  
+    <h3>Jouw acties</h3>
+    <div id="tools">
+      <div class="tool selected" data-tool="pick" data-name="Bouw/plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
+      <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
     </div>
-    <h3 id="sb_item">Elementen: <span id="selected-item-label"></span></h3>
 
-    <div id="elements-grid">
-
-      <div class="item" data-type="tree1" data-name="Naaldboom">
-        <img src="assets/tree1.png" width="40" alt="boom 1">
-      </div>
-
-      <div class="item" data-type="tree2" data-name="Loofboom">
-        <img src="assets/tree2.png" width="40" alt="boom 2">
-      </div>
-
-      <div class="item" data-type="tree3" data-name="fruitboom">
-        <img src="assets/tree3.png" width="40" alt="boom 3">
-      </div>
-
-      <div class="item" data-type="fun12" data-name="Schommel">
-        <img src="assets/funelprev/swing.png" width="40" alt="schommel">
-      </div>
-
-      <div class="item" data-type="bush1" data-name="Struik blauw">
-        <img src="assets/bush1.png" width="40" alt="struik 1">
-      </div>
-
-      <div class="item" data-type="bush2" data-name="Struik oranje">
-        <img src="assets/bush2.png" width="40" alt="struik 2">
-      </div>
-
-      <div class="item" data-type="bush3" data-name="Struik groen">
-        <img src="assets/bush3.png" width="40" alt="struik 3">
-      </div>
-
-      <div class="item" data-type="fun13" data-name="Wip-wap">
-        <img src="assets/funelprev/wip.png" width="40" alt="wipwap">
-      </div>
-
-      <div class="item" data-type="flbed1" data-name="Blauw bloemenperk">
-        <img src="assets/bluefl.png" width="40" alt="bloem blauw">
-      </div>
-
-      <div class="item" data-type="flbed2" data-name="Rood bloemenperk">
-        <img src="assets/redfl.png" width="40" alt="bloem rood">
-      </div>
-
-      <div class="item" data-type="flbed3" data-name="Geel bloemenperk">
-        <img src="assets/yellowfl.png" width="40" alt="bloem geel">
-      </div>
-
-      <div class="item" data-type="fun15" data-name="Glijbaan">
-        <img src="assets/funelprev/slideW.png" width="40" alt="glijbaan roze">
-      </div>
-
-      <div class="item" data-type="path" data-name="Zandpad">
-        <img src="assets/funelprev/path.png" width="40" alt="zandpad">
-      </div>
-
-      <div class="item" data-type="fun7" data-name="Fontein">
-        <img src="assets/funelprev/fountain.png" width="40" alt="fontein">
-      </div>
-
-      <div class="item" data-type="fun11" data-name="Standbeeld">
-        <img src="assets/funelprev/statue.png" width="40" alt="standbeeld">
-      </div>
-
-      <div class="item" data-type="fun5" data-name="Schaaktafel">
-        <img src="assets/funelprev/chess.png" width="40" alt="schaaktafel">
-      </div>
-
-      <div class="item" data-type="rot4" data-name="Bankje (W)">
-        <img src="assets/funelprev/benchW.png" width="40" alt="bankje W">
-      </div>
-
-      <div class="item" data-type="rot1" data-name="Bankje (N)">
-        <img src="assets/funelprev/benchN.png" width="40" alt="bankje N">
-      </div>
-
-      <div class="item" data-type="fun2" data-name="Foodtruck">
-        <img src="assets/funelprev/cartE.png" width="40" alt="foodtruck 1">
-      </div>
-
-      <div class="item" data-type="fun8" data-name="Half-pipe">
-        <img src="assets/funelprev/hpipe.png" width="40" alt="halfpipe">
-      </div>
-
-      <div class="item" data-type="rot3" data-name="Bankje (Z)">
-        <img src="assets/funelprev/benchS.png" width="40" alt="bankje Z">
-      </div>
-
-      <div class="item" data-type="rot2" data-name="Bankje (O)">
-        <img src="assets/funelprev/benchE.png" width="40" alt="bankje O">
-      </div>
-
-      <div class="item" data-type="fun3" data-name="Ijstruck">
-        <img src="assets/funelprev/cartW.png" width="40" alt="foodtruck 2">
-      </div>
-
-      <div class="item" data-type="fun10" data-name="Voetbalveld">
-        <img src="assets/funelprev/soccer.png" width="40" alt="voetbalveld">
-      </div>
-
-      <div class="item" data-type="fun9" data-name="Kinderboerderij">
-        <img src="assets/funelprev/pzoo.png" width="40" alt="kinderboerderij">
-      </div>
-
-      <div class="item" data-type="fun6" data-name="Eendenvijver">
-        <img src="assets/funelprev/dpond.png" width="40" alt="eendenvijver">
-      </div>
-
-      <div class="item" data-type="fun4" data-name="Koffietent">
-        <img src="assets/funelprev/ccourt.png" width="40" alt="koffietent">
-      </div>
-
-      <div class="item" data-type="fun1" data-name="Basketbalveld">
-        <img src="assets/funelprev/bcourt.png" width="40" alt="basketbalveld">
-      </div>
-
+    <h3>Wie is aan de beurt?</h3>
+    <div id="beurt">
+      <span class="turn-label">Je bouwmaatje</span>
+      <img class="turn-avatar" id="playerAvatarImg" src="assets/players/player01.png">
     </div>
+
+    <h3>Elementen</h3>
+    <table id="elements-grid" border="0">
+      <tbody>
+        <tr>
+          <td><div class="item" data-type="tree1" data-name="Naaldboom"><img src="assets/tree1.png" width="40" alt="boom 1"></div></td>
+          <td><div class="item" data-type="tree2" data-name="Loofboom"><img src="assets/tree2.png" width="40" alt="boom 2"></div></td>
+          <td><div class="item" data-type="tree3" data-name="fruitboom"><img src="assets/tree3.png" width="40" alt="boom 3"></div></td>
+          <td><div class="item" data-type="fun12" data-name="Schommel"><img src="assets/funelprev/swing.png" width="40" alt="schommel"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="bush1" data-name="Struik blauw"><img src="assets/bush1.png" width="40" alt="struik 1"></div></td>
+          <td><div class="item" data-type="bush2" data-name="Struik oranje"><img src="assets/bush2.png" width="40" alt="struik 2"></div></td>
+          <td><div class="item" data-type="bush3" data-name="Struik groen"><img src="assets/bush3.png" width="40" alt="struik 3"></div></td>
+          <td><div class="item" data-type="fun13" data-name="Wip-wap"><img src="assets/funelprev/wip.png" width="40" alt="wipwap"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="flbed1" data-name="Blauw bloemenperk"><img src="assets/bluefl.png" width="40" alt="bloem blauw"></div></td>
+          <td><div class="item" data-type="flbed2" data-name="Rood bloemenperk"><img src="assets/redfl.png" width="40" alt="bloem rood"></div></td>
+          <td><div class="item" data-type="flbed3" data-name="Geel bloemenperk"><img src="assets/yellowfl.png" width="40" alt="bloem geel"></div></td>
+          <td><div class="item" data-type="fun15" data-name="Glijbaan"><img src="assets/funelprev/slideW.png" width="40" alt="glijbaan roze"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="path" data-name="Zandpad"><img src="assets/funelprev/path.png" width="40" alt="zandpad"></div></td>
+          <td><div class="item" data-type="fun7" data-name="Fontein"><img src="assets/funelprev/fountain.png" width="40" alt="fontein"></div></td>
+          <td><div class="item" data-type="fun11" data-name="Standbeeld"><img src="assets/funelprev/statue.png" width="40" alt="standbeeld"></div></td>
+          <td><div class="item" data-type="fun5" data-name="Schaaktafel"><img src="assets/funelprev/chess.png" width="40" alt="schaaktafel"></div></td>            
+        </tr>
+        <tr>
+          <td><div class="item" data-type="rot4" data-name="Bankje (W)"><img src="assets/funelprev/benchW.png" width="40" alt="bankje W"></div></td>
+          <td><div class="item" data-type="rot1" data-name="Bankje (N)"><img src="assets/funelprev/benchN.png" width="40" alt="bankje N"></div></td>
+          <td><div class="item" data-type="fun2" data-name="Foodtruck"><img src="assets/funelprev/cartE.png" width="40"  alt="foodtruck 1"></div></td>
+          <td><div class="item" data-type="fun8" data-name="Half-pipe"><img src="assets/funelprev/hpipe.png" width="40" alt="halfpipe"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="rot3" data-name="Bankje (Z)"><img src="assets/funelprev/benchS.png" width="40" alt="bankje Z"></div></td>
+          <td><div class="item" data-type="rot2" data-name="Bankje (O)"><img src="assets/funelprev/benchE.png" width="40" alt="bankje O"></div></td>
+          <td><div class="item" data-type="fun3" data-name="Ijstruck"><img src="assets/funelprev/cartW.png" width="40"  alt="foodtruck 2"></div></td>
+          <td><div class="item" data-type="fun10" data-name="Voetbalveld"><img src="assets/funelprev/soccer.png" width="40" alt="voetbalveld"></div></td>
+        </tr>
+        <tr>
+          <td><div class="item" data-type="fun9" data-name="Kinderboerderij"><img src="assets/funelprev/pzoo.png" width="40" alt="kinderboerderij"></div></td>
+          <td><div class="item" data-type="fun6" data-name="Eendenvijver"><img src="assets/funelprev/dpond.png" width="40"  alt="eendenvijver"></div></td>          
+          <td><div class="item" data-type="fun4" data-name="Koffietent"><img src="assets/funelprev/ccourt.png" width="40"  alt="koffietent"></div></td>
+          <td><div class="item" data-type="fun1" data-name="Basketbalveld"><img src="assets/funelprev/bcourt.png" width="40"  alt="basketbalveld"></div></td>
+        </tr>
+      </tbody>
+    </table>
     
-    <h3 id="sb_sound">Geluid</h3>
+    <h3>Geluid</h3>
 
     <div id="music-controls">
       <button data-music="bg1">Platteland</button>
@@ -155,7 +83,7 @@
     </div>
   </div>
 
-  <div id="game-timer">01:00</div> <!-- 5:00 for real-->
+  <div id="game-timer">05:00</div> <!-- 5:00 for real-->
 
   <div id="start-overlay">
     <div id="start-box">
@@ -183,22 +111,6 @@
   <div id="stage-container"></div>
 
   <script>
-    let foutopspoor = false;
-    let version = '2.1.1' // mobile fix first version 
-    // determine whether touch screen device is present
-    const isMobileUI = window.matchMedia('(pointer: coarse)').matches;
-    window.addEventListener('load', () => { fitStageToContainer(); });
-    window.addEventListener('resize', () => { fitStageToContainer(); });
-
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', fitStageToContainer);
-    }
-
-    let mobileTouchStart = null;
-    let mobileTouchCurrent = null;
-    let mobileDragging = false;
-    let touchStartPixel = null;
-
     const GRID_SIZE = 25;
     const MAX_PATH_LENGTH = 6;
     const CELL_SIZE = 32;
@@ -210,7 +122,7 @@
 
     let gameEnded = false;
 
-    const GAME_DURATION_SECONDS = 60; // 300 for real
+    const GAME_DURATION_SECONDS = 300; // 300 for real
     let remainingSeconds = GAME_DURATION_SECONDS;
 
     const selectedAvatar = localStorage.getItem('playerAvatar');
@@ -246,48 +158,6 @@
       width,
       height
     });
-
-    function fitStageToContainer() {
-
-      requestAnimationFrame(() => {
-
-        const container = document.getElementById('stage-container');
-
-        const availableWidth = container.clientWidth;
-        const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        const availableHeight = Math.min(
-            container.clientHeight,
-            viewportHeight
-        );
-
-        const scale = Math.min(
-          availableHeight /height,
-          availableWidth / width
-        );
-
-        stage.scale({
-          x: scale,
-          y: scale
-        });
-
-        stage.width(width * scale);
-        stage.height(height * scale);
-
-
-        if (foutopspoor) {
-          const rect = stage.container().getBoundingClientRect();
-          const canvas = stage.container().querySelector("canvas");
-          document.getElementById('debug-panel').innerHTML = `
-            containerHeight=${container.clientHeight}<br>
-            stageRectHeight=${rect.height}<br>
-            stageHeight=${stage.height()}<br>
-            stageScale=${stage.scaleX()}<br>
-            canvasWidth=${canvas.clientWidth}<br>
-            canvasHeight=${canvas.clientHeight}
-          `;
-        }
-      });
-    }
 
     const grassLayer = new Konva.Layer();
     const ownershipLayer = new Konva.Layer();
@@ -356,7 +226,7 @@
 
     // set HUMAN into start mode
     let selectedType = null;
-    let selectedTool = 'pick';
+    let selectedTool = null;
     let lastTurnWasRecent = false; // path drawing behavior
     const placedUniqueFun = new Set(); // keep track of already placed fun items
 
@@ -378,9 +248,9 @@
   
     const humanDeleteImg = new Image();
     humanDeleteImg.src = 'assets/human-erase.png';
-    humanDeleteImg.onload = () => {
-      humanCursor.image(humanPlaceImg);
-    };
+    // humanDeleteImg.onload = () => {
+    //   humanCursor.image(humanPlaceImg);
+    // };
 
     cursorLayer.add(humanCursor);
 
@@ -517,65 +387,42 @@
 
     const tooltip = document.getElementById('tooltip');
 
-    // item tooltips and selection
+    // item tooltips
     document.querySelectorAll('.item').forEach(el => {
-      if (!isMobileUI) {
-        el.addEventListener('mouseenter', () => {
-          tooltip.innerText = el.dataset.name || el.dataset.type;
-          tooltip.style.opacity = '1';
-        });
 
-        el.addEventListener('mousemove', (e) => {
-          tooltip.style.left = (e.clientX + 14) + 'px';
-          tooltip.style.top = (e.clientY + 14) + 'px';
-        });
-
-        el.addEventListener('mouseleave', () => {
-          tooltip.style.opacity = '0';
-        });
-      }
-      el.addEventListener('click', () => {
-        clearSelectedUIitem();
-        el.classList.remove('bot-selected');
-        el.classList.add('selected');
-        selectedType = el.dataset.type;
-        selectedTool = el.dataset.tool;
-        if (isMobileUI) {
-          document.getElementById('selected-item-label').innerText =
-            el.dataset.name || '';
-        }
-        updateCursor();
+      el.addEventListener('mouseenter', () => {
+        tooltip.innerText = el.dataset.name || el.dataset.type;
+        tooltip.style.opacity = '1';
       });
+
+      el.addEventListener('mousemove', (e) => {
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top = (e.clientY + 14) + 'px';
+      });
+
+      el.addEventListener('mouseleave', () => {
+        tooltip.style.opacity = '0';
+      });
+
     });
 
-    // tool tooltips and selection
+    // tool tooltips
     document.querySelectorAll('.tool').forEach(el => {
-      if (!isMobileUI) {
-        el.addEventListener('mouseenter', () => {
-          tooltip.innerText = el.dataset.name;
-          tooltip.style.opacity = '1';
-        });
 
-        el.addEventListener('mousemove', (e) => {
-          tooltip.style.left = (e.clientX + 14) + 'px';
-          tooltip.style.top = (e.clientY + 14) + 'px';
-        });
-
-        el.addEventListener('mouseleave', () => {
-          tooltip.style.opacity = '0';
-        });
-      }
-      el.addEventListener('click', () => {
-        clearSelectedUItool();
-        el.classList.add('selected');
-        selectedType = el.dataset.type;
-        selectedTool = el.dataset.tool;
-        if (isMobileUI) {
-          document.getElementById('selected-tool-label').innerText =
-            el.dataset.name || '';
-        }
-        updateCursor();
+      el.addEventListener('mouseenter', () => {
+        tooltip.innerText = el.dataset.name;
+        tooltip.style.opacity = '1';
       });
+
+      el.addEventListener('mousemove', (e) => {
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top = (e.clientY + 14) + 'px';
+      });
+
+      el.addEventListener('mouseleave', () => {
+        tooltip.style.opacity = '0';
+      });
+
     });
 
     // start timer and music on click
@@ -600,11 +447,9 @@
     document.getElementById('mute-btn').addEventListener('click', () => {
 
       musicEnabled = !musicEnabled;
-
       if (currentMusic) {
-        currentMusic.muted = !musicEnabled;
+        currentMusic.volume = musicEnabled ? 0.5 : 0;
       }
-
       document.getElementById('mute-btn').innerText =
         musicEnabled ? 'Sst...' : 'Muziek graag!';
     });
@@ -663,7 +508,6 @@
     }
 
     function playMusic(trackKey, { fadeIn = true } = {}) {
-      // audio.muted = !musicEnabled;
 
       musicUnlocked = true;
       currentMusicKey = trackKey;
@@ -681,7 +525,6 @@
       const audio = new Audio(musicTracks[trackKey]);
       audio.loop = true;
       audio.volume = 0;
-      audio.muted = !musicEnabled;
 
       currentMusic = audio;
 
@@ -704,45 +547,34 @@
 
     // END game functions
     function playEndMusic() {
-      // audio.muted = !musicEnabled;
 
       const endKey = currentMusicKey.replace('bg', 'done');
+
       const endSrc = musicTracks[endKey] || musicTracks.done1;
 
+      // fade out current bg music
       if (currentMusic) {
         const old = currentMusic;
 
         fadeAudio(old, 0, 500, () => {
-
           old.pause();
           old.currentTime = 0;
-
-          const audio = new Audio(endSrc);
-
-          audio.loop = false;
-          audio.volume = 0.7;
-          audio.muted = !musicEnabled;
-
-          currentMusic = audio;
-
-          audio.play().catch(err => {
-            console.log("End music blocked:", err);
-          });
         });
-
-        return;
       }
 
+      // play matching end track
       const audio = new Audio(endSrc);
+
       audio.loop = false;
-      audio.volume = 0.7;
-      audio.muted = !musicEnabled;
+      audio.volume = musicEnabled ? 0.7 : 0;
 
-      currentMusic = audio;
+      const playPromise = audio.play();
 
-      audio.play().catch(err => {
-        console.log("End music blocked:", err);
-      });
+      if (playPromise) {
+        playPromise.catch(err => {
+          console.log("End music blocked:", err);
+        });
+      }
     }
 
     function endGame() {
@@ -908,8 +740,8 @@
     function updateTurnUI() {
       const beurt = document.getElementById("beurt");
 
-      const label = document.getElementById("playerTurn")
-      const avatar = document.getElementById("playerAvatarImg");
+      const label = beurt.querySelector(".turn-label");
+      const avatar = beurt.querySelector(".turn-avatar");
 
       if (currentTurn === 'human') {
         label.innerText = "Jij";
@@ -1636,16 +1468,10 @@
     // No cross-clearing!
     function clearSelectedUItool() {
       document.querySelectorAll('.tool').forEach(el => el.classList.remove('selected'));
-      if (isMobileUI) {
-        document.getElementById('selected-tool-label').innerText = '';
-      }
     }
 
     function clearSelectedUIitem() {
       document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
-      if (isMobileUI) {
-        document.getElementById('selected-item-label').innerText = '';
-      }  
     }
 
     // also show and clear bot selections
@@ -1682,6 +1508,29 @@
         el.classList.add('bot-selected');
       }
     }
+
+    // Tool selection
+    document.querySelectorAll('.tool').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUItool();
+        el.classList.add('selected');
+        selectedTool = el.dataset.tool;
+        selectedType = null; // logical only
+        updateCursor();
+      });
+    });
+
+    // Item selection
+    document.querySelectorAll('.item').forEach(el => {
+      el.addEventListener('click', () => {
+        clearSelectedUIitem();
+        el.classList.remove('bot-selected');
+        el.classList.add('selected');
+        selectedType = el.dataset.type;
+        selectedTool = null; // logical only
+        updateCursor();
+      });
+    });
 
     // ---------- MULTI-TILE PLACEMENT ----------
     function placeSprite(type, gridX, gridY, isBot = false) {
@@ -2018,6 +1867,42 @@
               Math.abs(p.y - y) <= BOT_LOCAL_RADIUS
             );
 
+          // if (nearbyPaths.length) {
+
+          //   const chosen =
+          //     nearbyPaths[
+          //       Math.floor(Math.random() * nearbyPaths.length)
+          //     ];
+
+          //   // const benchTypes = ['rot1', 'rot2', 'rot3', 'rot4'];
+
+          //   for (let i = 0; i < 8; i++) {
+
+          //     const bench =
+          //       benchTypes[
+          //         Math.floor(Math.random() * benchTypes.length)
+          //       ];
+
+          //     const bx =
+          //       chosen.x + Math.floor(Math.random() * 3) - 1;
+
+          //     const by =
+          //       chosen.y + Math.floor(Math.random() * 3) - 1;
+
+          //     if (canPlace(bench, bx, by)) {
+
+          //       return moveBotCursorTo(
+          //         bx,
+          //         by,
+          //         'place',
+          //         bench,
+          //         () => {
+          //           placeSprite(bench, bx, by, true);
+          //         }
+          //       );
+          //     }
+          //   }
+          // }
           if (nearbyPaths.length) {
 
             const chosen =
@@ -2319,54 +2204,23 @@
       }, preDelay);
     }
 
-    // ---------- EVENT DETECTION ----------
+    // ---------- FIXED KONVA CLICK DETECTION ----------
     // Must set listening(true) and pointer-events must not be blocked
     grassLayer.listening(true);
     itemLayer.listening(true);
     stage.listening(true);
 
-    // Scaling helper functions
-    function getScaledPointer() {
-
-      const pos = stage.getPointerPosition();
-      if (!pos) return null;
-
-      const scale = stage.scaleX();
-
-      return {
-        x: pos.x / scale,
-        y: pos.y / scale
-      };
-    }
-
-    //
-    function getGridPointer() {
-
-      const pos = getScaledPointer();
-      if (!pos) return null;
-
-      return {
-        x: Math.floor(pos.x / CELL_SIZE),
-        y: Math.floor(pos.y / CELL_SIZE)
-      };
-    }
-
-    // drawing for non-mobile
+    // validity rectangle for item placement
     stage.on('pointermove', () => {
-      if (isMobileUI) return;
-      const pos = getScaledPointer();
+      const pos = stage.getPointerPosition();
       if (!pos) return;
 
       const gridX = Math.floor(pos.x / CELL_SIZE);
       const gridY = Math.floor(pos.y / CELL_SIZE);
 
-      if (!isMobileUI) {
-        humanCursor.x(gridX * CELL_SIZE);
-        humanCursor.y(gridY * CELL_SIZE);
-        humanCursor.visible(true);
-      } else {
-        humanCursor.visible(false);
-      }
+      humanCursor.x(gridX * CELL_SIZE);
+      humanCursor.y(gridY * CELL_SIZE);
+      humanCursor.visible(true);
 
       if (selectedTool==='erase'){
         humanCursor.image(humanDeleteImg);
@@ -2432,9 +2286,7 @@
       highlightLayer.batchDraw();
     });
 
-    // placing for non-mobile
     stage.on('pointerdown', () => {
-      if (isMobileUI) return;
       if (gameEnded) return;
       // if (!musicUnlocked) {
       //   musicUnlocked = true;
@@ -2442,8 +2294,8 @@
       // }
       if (currentTurn !== 'human') return;
       previewRect.visible(false);
-      const pos = getScaledPointer();
-      if (!pos) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return; // safety
 
       const gridX = Math.floor(pos.x / CELL_SIZE);
       const gridY = Math.floor(pos.y / CELL_SIZE);
@@ -2532,278 +2384,6 @@
         placeSprite(selectedType, gridX, gridY);
       }
     });
-    //=========== MOBILE SECTION =================================//
-    
-    // mobile start
-    stage.on('touchstart', () => {
-      if (!isMobileUI) return;
-      if (gameEnded) return;
-      if (currentTurn !== 'human') return;
-
-      const pos = getScaledPointer();
-      if (!pos) return;
-
-      touchStartPixel = {
-        x: pos.x,
-        y: pos.y
-      };
-      
-      const gridX = Math.floor(pos.x / CELL_SIZE);
-      const gridY = Math.floor(pos.y / CELL_SIZE);
-
-      mobileTouchStart = { x: gridX, y: gridY };
-      mobileTouchCurrent = { x: gridX, y: gridY };
-      mobileDragging = false;
-
-      // path remembers start immediately
-      if (selectedType === 'path') {
-        pathStart = { x: gridX, y: gridY };
-      }
-    });
-
-    // mobile move
-    stage.on('touchmove', () => {
-      if (!isMobileUI) return;
-      if (!mobileTouchStart) return;
-
-      const pos = getScaledPointer();
-      if (!pos) return;
-
-      const dx = pos.x - touchStartPixel.x;
-      const dy = pos.y - touchStartPixel.y;
-
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance > 12) {
-        mobileDragging = true;
-      }
-
-      const gridX = Math.floor(pos.x / CELL_SIZE);
-      const gridY = Math.floor(pos.y / CELL_SIZE);
-
-      mobileTouchCurrent = { x: gridX, y: gridY };
-            
-      if (selectedType && selectedType !== 'path' && selectedTool !== 'erase') {
-        const size = spriteSizes[selectedType] || { w:1, h:1 };
-
-        previewRect.x(gridX * CELL_SIZE);
-        previewRect.y(gridY * CELL_SIZE);
-
-        previewRect.width(size.w * CELL_SIZE);
-        previewRect.height(size.h * CELL_SIZE);
-
-        previewRect.fill(
-          canPlace(selectedType, gridX, gridY)
-            ? 'green'
-            : 'red'
-        );
-
-        previewRect.visible(true);
-      }
-
-      if (selectedType === 'path' && pathStart) {
-
-        const dx = Math.abs(gridX - pathStart.x);
-        const dy = Math.abs(gridY - pathStart.y);
-
-        let previewX = pathStart.x;
-        let previewY = pathStart.y;
-
-        let previewW = 1;
-        let previewH = 1;
-
-        if (dx >= dy) {
-          previewX = Math.min(pathStart.x, gridX);
-          previewW = Math.min(
-            MAX_PATH_LENGTH,
-            Math.abs(gridX - pathStart.x) + 1
-          );
-        } else {
-          previewY = Math.min(pathStart.y, gridY);
-          previewH = Math.min(
-            MAX_PATH_LENGTH,
-            Math.abs(gridY - pathStart.y) + 1
-          );
-        }
-
-        pathPreview.x(previewX * CELL_SIZE);
-        pathPreview.y(previewY * CELL_SIZE);
-        pathPreview.width(previewW * CELL_SIZE);
-        pathPreview.height(previewH * CELL_SIZE);
-
-        pathPreview.visible(true);
-      }
-
-      highlightLayer.batchDraw();
-    });
-
-    // mobile release
-    stage.on('touchend', () => {
-      if (!isMobileUI) return;
-      if (!mobileTouchStart) return;
-      if (gameEnded) return;
-      if (currentTurn !== 'human') return;
-
-      // -------------------------
-      // ERASE MODE
-      // -------------------------
-      if (selectedTool === 'erase') {
-
-        const x = mobileTouchStart.x;
-        const y = mobileTouchStart.y;
-
-        if (pathTiles[key(x, y)]) {
-          deletePathSection(x, y);
-        } else {
-          deleteSprite(x, y);
-        }
-
-        previewRect.visible(false);
-        pathPreview.visible(false);
-
-        mobileTouchStart = null;
-        mobileTouchCurrent = null;
-        mobileDragging = false;
-
-        highlightLayer.draw();
-        return;
-      }
-
-      // -------------------------
-      // OBJECT PLACEMENT
-      // -------------------------
-      if (selectedType && selectedType !== 'path') {
-
-        const x = mobileTouchCurrent
-          ? mobileTouchCurrent.x
-          : mobileTouchStart.x;
-
-        const y = mobileTouchCurrent
-          ? mobileTouchCurrent.y
-          : mobileTouchStart.y;
-        if (!mobileDragging) {
-
-          mobileTouchStart = null;
-          mobileTouchCurrent = null;
-          mobileDragging = false;
-
-          previewRect.visible(false);
-
-          highlightLayer.draw();
-
-          return;
-        }
-        placeSprite(selectedType, x, y);
-
-        previewRect.visible(false);
-
-        mobileTouchStart = null;
-        mobileTouchCurrent = null;
-        mobileDragging = false;
-
-        highlightLayer.draw();
-        return;
-      }
-
-      // -------------------------
-      // PATH DRAWING
-      // -------------------------
-      if (selectedType === 'path' && pathStart) {
-
-        const endX = mobileTouchCurrent
-          ? mobileTouchCurrent.x
-          : mobileTouchStart.x;
-
-        const endY = mobileTouchCurrent
-          ? mobileTouchCurrent.y
-          : mobileTouchStart.y;
-
-        // same tile = cancel
-        if (
-          endX === pathStart.x &&
-          endY === pathStart.y
-        ) {
-
-          pathStart = null;
-
-          pathPreview.visible(false);
-
-          mobileTouchStart = null;
-          mobileTouchCurrent = null;
-          mobileDragging = false;
-
-          highlightLayer.draw();
-          return;
-        }
-
-        if (!mobileDragging) {
-
-          pathStart = null;
-
-          mobileTouchStart = null;
-          mobileTouchCurrent = null;
-          mobileDragging = false;
-
-          pathPreview.visible(false);
-
-          highlightLayer.draw();
-
-          return;
-        }
-
-        let targetX = endX;
-        let targetY = endY;
-
-        const dx = Math.abs(endX - pathStart.x);
-        const dy = Math.abs(endY - pathStart.y);
-
-        // horizontal wins
-        if (dx >= dy) {
-
-          targetY = pathStart.y;
-
-          const dir = Math.sign(endX - pathStart.x);
-
-          targetX =
-            pathStart.x +
-            dir *
-            Math.min(MAX_PATH_LENGTH - 1, dx);
-
-        } else {
-
-          targetX = pathStart.x;
-
-          const dir = Math.sign(endY - pathStart.y);
-
-          targetY =
-            pathStart.y +
-            dir *
-            Math.min(MAX_PATH_LENGTH - 1, dy);
-        }
-
-        const success = createPathSection(
-          pathStart.x,
-          pathStart.y,
-          targetX,
-          targetY,
-          'human'
-        );
-        if (success) {
-          endHumanTurn();
-        }
-
-        pathStart = null;
-
-        pathPreview.visible(false);
-
-        mobileTouchStart = null;
-        mobileTouchCurrent = null;
-        mobileDragging = false;
-
-        highlightLayer.draw();
-      }
-    });
-
 
     function updateCursor() {
       const container = document.getElementById('stage-container');
@@ -2815,8 +2395,6 @@
 
       if (selectedTool === 'erase') {
         container.style.cursor = "url('assets/cursor-erase-human.png') 16 16, auto";
-        console.log("at erase?");
-        clearSelectedUIitem();
       } else {
         container.style.cursor = "url('assets/cursor-place-human.png') 16 16, auto";
       }

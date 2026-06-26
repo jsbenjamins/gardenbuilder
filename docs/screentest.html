@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Media Query Tester</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+
+.box {
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+}
+
+#active-breakpoint {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* default */
+body {
+  background: #f0f0f0;
+}
+
+/* breakpoints */
+@media (max-width: 600px) {
+  body { background: #ffd0d0; }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  body { background: #d0ffd0; }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  body { background: #d0d0ff; }
+}
+
+@media (min-width: 1201px) {
+  body { background: #fff0b0; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Media Query Tester</h1>
+
+<div class="box">
+  <div id="active-breakpoint"></div>
+</div>
+
+<div class="box">
+  Width: <span id="width"></span> px
+</div>
+
+<div class="box">
+  Height: <span id="height"></span> px
+</div>
+
+<div class="box">
+  devicePixelRatio: <span id="dpr"></span>
+</div>
+
+<div class="box">
+  Orientation: <span id="orientation"></span>
+</div>
+
+<script>
+function updateInfo() {
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  document.getElementById('width').textContent = w;
+  document.getElementById('height').textContent = h;
+  document.getElementById('dpr').textContent = window.devicePixelRatio;
+  document.getElementById('orientation').textContent =
+    w > h ? 'landscape' : 'portrait';
+
+  let breakpoint;
+
+  if (w <= 600) {
+    breakpoint = '≤ 600px (phone)';
+  }
+  else if (w <= 900) {
+    breakpoint = '601 - 900px (large phone / small tablet)';
+  }
+  else if (w <= 1200) {
+    breakpoint = '901 - 1200px (tablet / small desktop)';
+  }
+  else {
+    breakpoint = '> 1200px (desktop)';
+  }
+
+  document.getElementById('active-breakpoint').textContent =
+    'Current breakpoint: ' + breakpoint;
+}
+
+updateInfo();
+
+window.addEventListener('resize', updateInfo);
+</script>
+
+</body>
+</html>

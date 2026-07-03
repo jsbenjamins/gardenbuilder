@@ -15,7 +15,7 @@
   <!-- <div id="debug-panel"></div> -->
   <div id="sidebar">
     <div id="mobile-topbar">
-      <h3 id="sb_tool">Jouw acties: <span id="selected-tool-label">Plaats</span></h3>
+      <h3 id="sb_tool">Jouw acties: <span id="selected-tool-label"></span></h3>
       <div id="tools">
         <div class="tool selected" data-tool="pick" data-name="Plaats"><img src="assets/cursor-place-human.png" width="60" alt="Bouw/plaats"></div>
         <div class="tool" data-tool="erase" data-name="Verwijder"><img src="assets/cursor-erase-human.png" width="60" alt="Verwijder"></div>
@@ -448,7 +448,8 @@
       flbed2: 'assets/redfl.png',
       flbed3: 'assets/yellowfl.png',
 
-      fun1: 'assets/funel/bcourt.png',
+      fun1: 'assets/funel/bcourt1.png',
+      fun1_done: 'assets/funel/bcourt2.png',
       fun2: 'assets/funel/cartE.png',
       fun3: 'assets/funel/cartW.png',
       fun4: 'assets/funel/ccourt.png',
@@ -487,7 +488,8 @@
       flbed2: { w: 2, h: 2, c: 3},
       flbed3: { w: 2, h: 2, c: 3 },
          
-      fun1: { w: 4, h: 6, c: 4 },
+      fun1: { w: 4, h: 6, c: 9 , completesTo: 'fun1_done' },
+      fun1_done: { w: 4, h: 6, c: 4 },
       fun2: { w: 3, h: 3, c: 4 },
       fun3: { w: 3, h: 3, c: 4 },
       fun4: { w: 8, h: 6, c: 4 },

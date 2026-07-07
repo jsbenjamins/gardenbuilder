@@ -181,10 +181,11 @@
 
   <div id="tooltip"></div>
   <div id="stage-container"></div>
+  <div id="bot-stage-container"></div>
 
   <script>
     let foutopspoor = false;
-    let version = '2.1.1' // mobile fix first version 
+    let version = '2.2.1' // solo first version 
     // determine whether touch screen device is present
     const isMobileUI = window.matchMedia('(pointer: coarse)').matches;
     window.addEventListener('load', () => { fitStageToContainer(); });
@@ -199,13 +200,43 @@
     let mobileDragging = false;
     let touchStartPixel = null;
 
+    const botScript = [
+
+        { time:  4000, action: "place", type: "tree2", x: 5,  y: 5 },
+
+        { time:  9000, action: "place", type: "tree1", x: 8,  y: 6 },
+
+        { time: 14000, action: "place", type: "bush3", x: 7,  y: 9 },
+
+        { time: 20000, action: "path", startX: 5, startY: 11, endX: 10, endY: 11 },
+
+        { time: 23000, action: "path", startX: 10, startY: 11, endX: 10, endY: 16 },
+
+        { time: 25000, action: "path", startX: 10, startY: 11, endX: 10, endY: 7 },
+
+        { time: 27000, action: "place", type: "fun12", x: 6,  y: 7 },      // swing
+
+        { time: 34000, action: "place", type: "flbed2", x: 9,  y: 7 },
+
+        { time: 41000, action: "place", type: "bush1", x: 11, y: 10 },
+
+        { time: 47000, action: "place", type: "rot1", x: 8,  y: 12 },      // bench facing path
+
+        { time: 54000, action: "place", type: "tree3", x: 14, y: 4 },
+
+        { time: 59000, action: "place", type: "fun7", x: 12, y: 8 }        // fountain
+
+    ];
+    let botScriptIndex = 0;
+    let gameStartTime = null;
+
     const GRID_SIZE = 25;
     const MAX_PATH_LENGTH = 6;
     const CELL_SIZE = 32;
     const width = GRID_SIZE * CELL_SIZE;
     const height = GRID_SIZE * CELL_SIZE;
     
-    let currentTurn = 'bot'; // 'human' | 'bot'
+    let currentTurn = 'human'; // 'human' | 'bot'
     let turnNumber = 1;
 
     let gameEnded = false;
@@ -270,9 +301,17 @@
           y: scale
         });
 
+        botStage.scale({
+          x: scale * 0.5,
+          y: scale * 0.5
+        });
+
+
         stage.width(width * scale);
         stage.height(height * scale);
 
+        botStage.width(width * scale * 0.5);
+        botStage.height(height * scale * 0.5);
 
         if (foutopspoor) {
           const rect = stage.container().getBoundingClientRect();
@@ -324,6 +363,28 @@
       listening: false
     });
 
+      
+    highlightLayer.add(humanHighlight);
+    highlightLayer.add(previewRect);
+
+    const botStage = new Konva.Stage({
+      container: 'bot-stage-container',
+      width,
+      height
+    });
+
+    const botGrassLayer = new Konva.Layer();
+    const botOwnershipLayer = new Konva.Layer();
+    const botHighlightLayer = new Konva.Layer();
+    const botItemLayer = new Konva.Layer();
+    const botCursorLayer = new Konva.Layer();
+
+    botStage.add(botGrassLayer);
+    botStage.add(botOwnershipLayer);
+    botStage.add(botHighlightLayer);
+    botStage.add(botItemLayer);
+    botStage.add(botCursorLayer);
+
     // bot highlight last item
     const botHighlight = new Konva.Rect({
       x: 0,
@@ -335,10 +396,11 @@
       visible: false,
       listening: false
     });
-    
-    highlightLayer.add(humanHighlight);
-    highlightLayer.add(botHighlight);
-    highlightLayer.add(previewRect);
+    botHighlightLayer.add(botHighlight);
+
+    let botPlacedSprites = [];
+    let botPathTiles = {};
+    let botPathSections = [];
 
     // BOT stuff
     const BOT_FOLLOW_CHANCE = 0.8;
@@ -448,19 +510,19 @@
       flbed2: 'assets/redfl.png',
       flbed3: 'assets/yellowfl.png',
 
-      fun1: 'assets/funel/bcourt1.png',
-      fun1_done: 'assets/funel/bcourt2.png',
+      fun1: 'assets/funel/bcourt2.png',
+      // fun1_done: 'assets/funel/bcourt2.png',
       fun2: 'assets/funel/cartE.png',
       fun3: 'assets/funel/cartW.png',
       fun4: 'assets/funel/ccourt.png',
-      fun5: 'assets/funel/chess1.png',
-      fun5_done: 'assets/funel/chess2.png',
+      fun5: 'assets/funel/chess2.png',
+      // fun5_done: 'assets/funel/chess2.png',
       fun6: 'assets/funel/dpond.png',
       fun7: 'assets/funel/fountain.png',
-      fun8: 'assets/funel/hpipe1.png',
-      fun8_done: 'assets/funel/hpipe2.png',
-      fun9: 'assets/funel/pzoo1.png',
-      fun9_done: 'assets/funel/pzoo2.png',
+      fun8: 'assets/funel/hpipe2.png',
+      // fun8_done: 'assets/funel/hpipe2.png',
+      fun9: 'assets/funel/pzoo2.png',
+      // fun9_done: 'assets/funel/pzoo2.png',
       fun10: 'assets/funel/soccer.png',
       fun11: 'assets/funel/statue.png',
       fun12: 'assets/funel/swing.png',
@@ -488,19 +550,19 @@
       flbed2: { w: 2, h: 2, c: 3},
       flbed3: { w: 2, h: 2, c: 3 },
          
-      fun1: { w: 4, h: 6, c: 9 , completesTo: 'fun1_done' },
-      fun1_done: { w: 4, h: 6, c: 4 },
+      // fun1: { w: 4, h: 6, c: 9 , completesTo: 'fun1_done' },
+      fun1: { w: 4, h: 6, c: 4 },
       fun2: { w: 3, h: 3, c: 4 },
       fun3: { w: 3, h: 3, c: 4 },
       fun4: { w: 8, h: 6, c: 4 },
-      fun5: { w: 3, h: 3, c: 9, completesTo: 'fun5_done' },
-      fun5_done: { w: 3, h: 3, c: 4 },
+      // fun5: { w: 3, h: 3, c: 9, completesTo: 'fun5_done' },
+      fun5: { w: 3, h: 3, c: 4 },
       fun6: { w: 4, h: 3, c: 4 },
       fun7: { w: 2, h: 2, c: 4 },
-      fun8: { w: 5, h: 4, c: 9, completesTo: 'fun8_done' },
-      fun8_done: { w: 5, h: 4, c: 4 },
-      fun9: { w: 6, h: 4, c: 9, completesTo: 'fun9_done' },
-      fun9_done: { w: 6, h: 4, c: 4 },
+      // fun8: { w: 5, h: 4, c: 9, completesTo: 'fun8_done' },
+      fun8: { w: 5, h: 4, c: 4 },
+      // fun9: { w: 6, h: 4, c: 9, completesTo: 'fun9_done' },
+      fun9: { w: 6, h: 4, c: 4 },
       fun10: { w: 15, h: 8, c: 4 },
       fun11: { w: 1, h: 2, c: 4 },
       fun12: { w: 3, h: 3, c: 4 },
@@ -580,16 +642,60 @@
       });
     });
 
-    // start timer and music on click
+    // start timer and music on click, START THE GAME HERE!!!!
     document.getElementById('start-btn').addEventListener('click', () => {
       document.getElementById('start-overlay').style.display = 'none';
-      buildGrass();
+      buildGrass(grassLayer);
+      buildGrass(botGrassLayer);
       playMusic('bg1', { fadeIn: true });
       setTimeout(() => {
         startGameTimer();
-        botOpeningMove();
-      }, 3000);
+        gameStartTime = performance.now();
+        setInterval(runBotScript, 50);
+        }, 3000);
     });
+
+    // bot animation stuff here
+    function runBotScript() {
+
+        const elapsed = performance.now() - gameStartTime;
+
+        while (
+            botScriptIndex < botScript.length &&
+            botScript[botScriptIndex].time <= elapsed
+        ) {
+
+            executeBotEvent(botScript[botScriptIndex]);
+            botScriptIndex++;
+        }
+
+    }
+
+    function executeBotEvent(event) {
+
+        switch(event.action) {
+
+            case "place":
+                placeSprite(event.type, event.x, event.y, true);
+                break;
+
+            case "path":
+                createPathSection(
+                    event.startX,
+                    event.startY,
+                    event.endX,
+                    event.endY,
+                    "bot"
+                );
+                break;
+
+            case "delete":
+                deleteSprite(event.x, event.y, true);
+                break;
+
+        }
+
+    }
 
     // link music buttons
     document.querySelectorAll('#music-controls button[data-music]').forEach(btn => {
@@ -882,7 +988,7 @@
     // startGameTimer();
 
     // Building: grass background
-    function buildGrass() {
+    function buildGrass(layer) {
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
           const img = new Image();
@@ -897,10 +1003,10 @@
 
           img.onload = () => {
             tile.image(img);
-            grassLayer.draw();
+            layer.draw();
           };
 
-          grassLayer.add(tile);
+          layer.add(tile);
         }
       }
       updateTurnUI();
@@ -935,16 +1041,10 @@
     }
 
     function endHumanTurn() {
-      currentTurn = 'bot';
-
-      const delay =
-        TURN_DELAY_MIN +
-        Math.random() * (TURN_DELAY_MAX - TURN_DELAY_MIN);
-
-      setTimeout(() => {
-        runBotTurn();
-      }, delay);
-      console.log("ending Human turn");
+      currentTurn = 'human';
+      turnNumber++;
+      console.log("ending Bot turn");
+      clearBotSelectTool();
       updateTurnUI();
     }
 
@@ -971,9 +1071,10 @@
     }
 
     // show turn history
-    function showHighlight(who, x, y, w = 1, h = 1) {
+    function showHighlight(who, x, y, w = 1, h = 1, isBot=false) {
       const target = who === 'human' ? humanHighlight : botHighlight;
-
+      const highlightLayerTarget = isBot ? botHighlightLayer : highlightLayer;
+      console.log(isBot);
       target.x(x * CELL_SIZE);
       target.y(y * CELL_SIZE);
 
@@ -984,7 +1085,7 @@
 
       //target.zIndex(0);
 
-      highlightLayer.draw();
+      highlightLayerTarget.draw();
     }
 
     // ---------- PATH SYSTEM ----------
@@ -1029,6 +1130,10 @@
 
     function createPathSection(startX, startY, endX, endY, owner='human') {
 
+      const ownershipLayerTarget = owner === 'bot' ? botOwnershipLayer : ownershipLayer;
+      const pathTilesTarget = owner === 'bot' ? botPathTiles : pathTiles;
+      const placedSpritesTarget = owner === 'bot' ? botPlacedSprites : placedSprites;
+
       // ---------- ONLY STRAIGHT LINES
       if (startX !== endX && startY !== endY) {
         return false;
@@ -1071,7 +1176,7 @@
         for (let y = minY; y <= maxY; y++) {
 
           // ---------- BLOCK OBJECTS
-          const blocked = placedSprites.some(p =>
+          const blocked = placedSpritesTarget.some(p =>
             x < p.x + p.w &&
             x + 1 > p.x &&
             y < p.y + p.h &&
@@ -1081,15 +1186,15 @@
           if (blocked) return false;
 
           // ---------- PATH OVERLAP RULES
-          const overlapsExisting = pathTiles[key(x,y)];
+          const overlapsExisting = pathTilesTarget[key(x,y)];
 
           if (overlapsExisting) {
 
             // horizontal section
             if (horizontal) {
 
-              const left = pathTiles[key(x-1,y)];
-              const right = pathTiles[key(x+1,y)];
+              const left = pathTilesTarget[key(x-1,y)];
+              const right = pathTilesTarget[key(x+1,y)];
 
               // already horizontal path here
               if (left && right) {
@@ -1099,8 +1204,8 @@
             // vertical section
             } else {
 
-              const up = pathTiles[key(x,y-1)];
-              const down = pathTiles[key(x,y+1)];
+              const up = pathTilesTarget[key(x,y-1)];
+              const down = pathTilesTarget[key(x,y+1)];
 
               // already vertical path here
               if (up && down) {
@@ -1114,8 +1219,8 @@
 
             if (horizontal) {
 
-              const above = pathTiles[key(x, y - 1)];
-              const below = pathTiles[key(x, y + 1)];
+              const above = pathTilesTarget[key(x, y - 1)];
+              const below = pathTilesTarget[key(x, y + 1)];
 
               // avoid horizontal lane beside horizontal lane
               if (
@@ -1127,8 +1232,8 @@
 
             } else {
 
-              const left = pathTiles[key(x - 1, y)];
-              const right = pathTiles[key(x + 1, y)];
+              const left = pathTilesTarget[key(x - 1, y)];
+              const right = pathTilesTarget[key(x + 1, y)];
 
               // avoid vertical lane beside vertical lane
               if (
@@ -1155,27 +1260,27 @@
         listening: false
       });
 
-      ownershipLayer.add(bg);
+      ownershipLayerTarget.add(bg);
 
       // ---------- CREATE / INCREMENT PATHS
       tiles.forEach(({x,y}) => {
 
         const k = key(x,y);
 
-        if (!pathTiles[k]) {
+        if (!pathTilesTarget[k]) {
 
-          pathTiles[k] = {
+          pathTilesTarget[k] = {
             sprite: null,
             connections: {N:false,E:false,S:false,W:false},
             refs: 0
           };
         }
 
-        pathTiles[k].refs++;
+        pathTilesTarget[k].refs++;
       });
 
       // ---------- REBUILD CONNECTIONS
-      recomputeAllPaths();
+      recomputeAllPaths(owner);
 
       // ---------- STORE SECTION
       pathSections.push({
@@ -1270,8 +1375,16 @@
     }
 
     // Path drawing helper function: get current connections
-    function getConnections(x, y) {
-      return pathTiles[key(x, y)]?.connections || { N:false, E:false, S:false, W:false };
+    // function getConnections(x, y) {
+    //   return pathTiles[key(x, y)]?.connections || { N:false, E:false, S:false, W:false };
+    // }
+    function getConnections(x, y, owner = 'human') {
+
+      const pathTilesTarget = owner === 'bot' ? botPathTiles : pathTiles;
+
+      return (
+        pathTilesTarget[key(x, y)]?.connections || { N:false, E:false, S:false, W:false }
+      );
     }
 
     // getconnections still used?
@@ -1338,52 +1451,120 @@
     }
 
     // Path drawing helper function: recompute all paths
-    function recomputeAllPaths() {
+    // function recomputeAllPaths() {
+    //   // 1. reset all connections
+    //   Object.keys(pathTiles).forEach(k => {
+    //     pathTiles[k].connections = { N:false, E:false, S:false, W:false };
+    //   });
+
+    //   // 2. rebuild connections
+    //   Object.keys(pathTiles).forEach(k => {
+    //     const [x, y] = k.split('-').map(Number);
+    //     const conn = pathTiles[k].connections;
+
+    //     const dirs = [
+    //       { dx:0, dy:-1, d:"N" },
+    //       { dx:1, dy:0, d:"E" },
+    //       { dx:0, dy:1, d:"S" },
+    //       { dx:-1, dy:0, d:"W" }
+    //     ];
+
+    //     dirs.forEach(({dx,dy,d}) => {
+    //       if (pathTiles[key(x+dx, y+dy)]) {
+    //         conn[d] = true;
+    //       }
+    //     });
+    //   });
+
+    //   // 3. redraw everything
+    //   Object.keys(pathTiles).forEach(k => {
+    //     const [x, y] = k.split('-').map(Number);
+    //     if (pathTiles[k]) {
+    //       drawPathTile(x, y);
+    //     }
+    //   });
+    // }
+    function recomputeAllPaths(owner = 'human') {
+      const pathTilesTarget = owner === 'bot' ? botPathTiles : pathTiles;
+
       // 1. reset all connections
-      Object.keys(pathTiles).forEach(k => {
-        pathTiles[k].connections = { N:false, E:false, S:false, W:false };
+      Object.keys(pathTilesTarget).forEach(k => {
+          pathTilesTarget[k].connections = { N:false, E:false, S:false, W:false };
       });
 
       // 2. rebuild connections
-      Object.keys(pathTiles).forEach(k => {
-        const [x, y] = k.split('-').map(Number);
-        const conn = pathTiles[k].connections;
+      Object.keys(pathTilesTarget).forEach(k => {
+          const [x, y] = k.split('-').map(Number);
+          const conn = pathTilesTarget[k].connections;
 
-        const dirs = [
-          { dx:0, dy:-1, d:"N" },
-          { dx:1, dy:0, d:"E" },
-          { dx:0, dy:1, d:"S" },
-          { dx:-1, dy:0, d:"W" }
-        ];
+          const dirs = [
+              { dx:0, dy:-1, d:"N" },
+              { dx:1, dy:0, d:"E" },
+              { dx:0, dy:1, d:"S" },
+              { dx:-1, dy:0, d:"W" }
+          ];
 
-        dirs.forEach(({dx,dy,d}) => {
-          if (pathTiles[key(x+dx, y+dy)]) {
-            conn[d] = true;
-          }
-        });
+          dirs.forEach(({dx,dy,d}) => {
+              if (pathTilesTarget[key(x+dx, y+dy)]) {
+                  conn[d] = true;
+              }
+          });
       });
 
       // 3. redraw everything
-      Object.keys(pathTiles).forEach(k => {
-        const [x, y] = k.split('-').map(Number);
-        if (pathTiles[k]) {
-          drawPathTile(x, y);
-        }
+      Object.keys(pathTilesTarget).forEach(k => {
+          const [x, y] = k.split('-').map(Number);
+          drawPathTile(x, y, owner);
       });
     }
 
     // Path drawing function
-    function drawPathTile(x, y) {
-      const conn = getConnections(x, y);
+    // function drawPathTile(x, y) {
+    //   const conn = getConnections(x, y);
+    //   const tileType = connectionsToTile(conn);
+
+    //   const img = new Image();
+    //   img.src = pathImages[tileType];
+
+    //   img.onload = () => {
+    //     let tile = pathTiles[key(x,y)]?.sprite;
+
+    //     if (!tile) {
+    //       tile = new Konva.Image({
+    //         x: x * CELL_SIZE,
+    //         y: y * CELL_SIZE,
+    //         width: CELL_SIZE,
+    //         height: CELL_SIZE,
+    //       });
+
+    //       itemLayer.add(tile);
+
+    //       // IMPORTANT:
+    //       // never overwrite the existing tile object
+    //       pathTiles[key(x,y)].sprite = tile;
+    //     }
+
+    //     tile.image(img);
+    //     itemLayer.draw();
+    //   };
+    // }
+    function drawPathTile(x, y, owner = 'human') {
+
+      const pathTilesTarget = owner === 'bot' ? botPathTiles : pathTiles;
+      const itemLayerTarget = owner === 'bot' ? botItemLayer : itemLayer;
+
+      const conn = getConnections(x, y, owner);
       const tileType = connectionsToTile(conn);
 
       const img = new Image();
       img.src = pathImages[tileType];
 
       img.onload = () => {
-        let tile = pathTiles[key(x,y)]?.sprite;
+
+        let tile = pathTilesTarget[key(x,y)]?.sprite;
 
         if (!tile) {
+
           tile = new Konva.Image({
             x: x * CELL_SIZE,
             y: y * CELL_SIZE,
@@ -1391,15 +1572,13 @@
             height: CELL_SIZE,
           });
 
-          itemLayer.add(tile);
+          itemLayerTarget.add(tile);
 
-          // IMPORTANT:
-          // never overwrite the existing tile object
-          pathTiles[key(x,y)].sprite = tile;
+          pathTilesTarget[key(x,y)].sprite = tile;
         }
 
         tile.image(img);
-        itemLayer.draw();
+        itemLayerTarget.draw();
       };
     }
 
@@ -1687,6 +1866,10 @@
 
     // ---------- MULTI-TILE PLACEMENT ----------
     function placeSprite(type, gridX, gridY, isBot = false) {
+      const itemLayerTarget = isBot ? botItemLayer : itemLayer;
+      const cursorLayerTarget = isBot ? botCursorLayer : cursorLayer;
+      const placedSpritesTarget = isBot ? botPlacedSprites : placedSprites;
+
       const cat = spriteSizes[type].c;
 
       // category 4 restriction (except fun7 + fun11)
@@ -1695,7 +1878,9 @@
       }
 
       // check whether grid cell is already occupied
-      if (!canPlace(type, gridX, gridY)) return;
+      if (!isBot) {
+        if (!canPlace(type, gridX, gridY)) return;
+      }
 
       const img = new Image();
       img.src = spriteImages[type];
@@ -1716,7 +1901,7 @@
         });
 
         sprite.scale({ x: 0.1, y: 0.1 });
-        itemLayer.add(sprite);
+        itemLayerTarget.add(sprite);
 
         sprite.to({
           scaleX: 1,
@@ -1725,7 +1910,7 @@
           easing: Konva.Easings.EaseOut
         });
 
-        itemLayer.draw();
+        itemLayerTarget.draw();
 
         // track placement
         let badge = null;
@@ -1741,7 +1926,7 @@
             listening: false
           });
 
-          cursorLayer.add(badge);
+          cursorLayerTarget.add(badge);
 
           // gentle floating animation
           badge.to({
@@ -1752,7 +1937,7 @@
           });
         }
 
-        placedSprites.push({
+        placedSpritesTarget.push({
           type,
           x: gridX,
           y: gridY,
@@ -1761,16 +1946,18 @@
           sprite,
           badge
         });
-        cursorLayer.draw();    
+        cursorLayerTarget.draw();    
 
         // disable button for fun item after placing, except fountainand statue
-        if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
-          placedUniqueFun.add(type);
+        if (!isBot) {
+          if (cat === 4 && type !== 'fun7' && type !== 'fun11') {
+            placedUniqueFun.add(type);
 
-          const btn = document.querySelector(`[data-type="${type}"]`);
-          if (btn) {
-            btn.style.opacity = "0.3";
-            btn.style.pointerEvents = "none";
+            const btn = document.querySelector(`[data-type="${type}"]`);
+            if (btn) {
+              btn.style.opacity = "0.3";
+              btn.style.pointerEvents = "none";
+            }
           }
         }
 
@@ -1779,9 +1966,9 @@
           lastHumanAction = { type, x: gridX, y: gridY };
           //triggerBot();
           endHumanTurn();
-          showHighlight('human', gridX, gridY, wat.w, wat.h);
+          showHighlight('human', gridX, gridY, wat.w, wat.h, false);
         } else {
-          showHighlight('bot', gridX, gridY, wat.w, wat.h);
+          showHighlight('bot', gridX, gridY, wat.w, wat.h, true);
         }
       };
     }

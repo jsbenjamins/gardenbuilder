@@ -1,3 +1,11 @@
+In another chats "Park builder chat 1-7" we've build a game with the idea of an online park builder where we place and delete objects as a player, can draw a continuous path and a bot, very human-like, builds along with the player most of the time, but can have a bit of a mind of its own as long as it clearly cooperates with the player! The full code pasted below between ==== lines works fully (it gets some avatar imformation from a preloading index.html, the game self runs as game.html). Ignore any previous code before today, July 7th 2026, in this or any other chat we had. In this new chat I want to continue working on the game, keep the tone in which you cooperate with me professional and not overly positive. 
+
+The next to-do for the game is to develop a version where you and the bot (simulated other player) each build your own park separate from each other. We need this version to compare working together vs working alone in the current game. I'm thinking of basically animating a predefined animation of building by the bot (list with per row a timestamp to build an element, the identity of the element and the grid coordinate of the top/left position). For large version of the game this can be smaller scaled extra grass/play field to the right of the player's field. In mobile/small screens this probably needs to be something else as we don't have the display size to animate a second park being built, so perhaps a clear div that shows "other player is building:" with an image of the elements the bot/other players build that follows the same list and in the end only display both parks.
+
+This requires the game to not be turn-based in the individual variant as well. I think the cleanest is to in the preloading index.html determine whether someone enters the collaborative current version or goes to a new separate gamesolo.html rather than building all sorts of switching in game.html, but use game.html as the base
+
+Inspect the code below of game.html and make suggestions step by step:
+====
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -173,8 +181,8 @@
       <h1>Goed samengewerkt,<br>wat een leuk park!</h1>
 
       <div id="end-buttons">
-        <!-- <button id="download-btn">Download je park</button> -->
-        <button id="survey-btn">Ga verder met het onderzoek en download je park</button>
+        <button id="download-btn">Download je park</button>
+        <button id="survey-btn">Ga naar vragenlijst</button>
       </div>
     </div>
   </div>
@@ -2826,3 +2834,5 @@
   </script>
 </body>
 </html>
+
+====

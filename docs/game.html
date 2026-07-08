@@ -181,18 +181,36 @@
 
   <div id="tooltip"></div>
   <div id="stage-container"></div>
+  <div id="scroll-fade"></div>
 
   <script>
     let foutopspoor = false;
     let version = '2.1.1' // mobile fix first version 
     // determine whether touch screen device is present
     const isMobileUI = window.matchMedia('(pointer: coarse)').matches;
+
+    function isCompactLayout() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
     window.addEventListener('load', () => { fitStageToContainer(); });
     window.addEventListener('resize', () => { fitStageToContainer(); });
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', fitStageToContainer);
     }
+
+    const fade = document.getElementById("scroll-fade");
+
+    function updateScrollFade() {
+        const atBottom =
+            window.innerHeight + window.scrollY >=
+            document.body.scrollHeight - 2;
+
+        fade.style.opacity = atBottom ? "0" : "1";
+    }
+
+    window.addEventListener("scroll", updateScrollFade);
+    window.addEventListener("resize", updateScrollFade);
 
     let mobileTouchStart = null;
     let mobileTouchCurrent = null;
@@ -286,6 +304,8 @@
             canvasHeight=${canvas.clientHeight}
           `;
         }
+
+        updateScrollFade();
       });
     }
 
@@ -804,20 +824,20 @@
         launchConfetti();
       }, 800);
 
-      // download button
-      document.getElementById('download-btn').onclick = () => {
+      // // download button
+      // document.getElementById('download-btn').onclick = () => {
 
-        const link = document.createElement('a');
+      //   const link = document.createElement('a');
 
-        link.download = 'mijn-park.png';
-        link.href = dataURL;
+      //   link.download = 'mijn-park.png';
+      //   link.href = dataURL;
 
-        document.body.appendChild(link);
+      //   document.body.appendChild(link);
 
-        link.click();
+      //   link.click();
 
-        document.body.removeChild(link);
-      };
+      //   document.body.removeChild(link);
+      // };
 
       // survey button
       document.getElementById('survey-btn').onclick = () => {
@@ -2085,11 +2105,12 @@
         });
 
       } else {
-        category = 4; // override it to 4, to prevent imperfect follow of bench.
-        // fallback:
-        // use same category but imperfect position
+
+        // Treat everything else as category 4
+        const responseCategory = 4;
+
         candidateTypes = Object.keys(spriteSizes).filter(t =>
-          spriteSizes[t].c === category &&
+          spriteSizes[t].c === responseCategory &&
           !t.endsWith('_done')
         );
       }

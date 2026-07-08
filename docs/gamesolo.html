@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Park Game UU</title>
-  <link rel="stylesheet" type="text/css" href="styles/stylenew.css">
+  <link rel="stylesheet" type="text/css" href="styles/stylenewsolo.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&family=VT323&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
         <img class="turn-avatar" id="playerAvatarImg" src="assets/players/player01.png">
       </div>  
     </div>
-    <h3 id="sb_item">Elementen: <span id="selected-item-label"></span></h3>
+    <h3 id="sb_item">Elementen: <span id="selected-item-label"><br/></span>&nbsp;<span id="bot-feed"></span></h3>
 
     <div id="elements-grid">
 
@@ -39,7 +39,7 @@
         <img src="assets/tree2.png" width="40" alt="boom 2">
       </div>
 
-      <div class="item" data-type="tree3" data-name="fruitboom">
+      <div class="item" data-type="tree3" data-name="Fruitboom">
         <img src="assets/tree3.png" width="40" alt="boom 3">
       </div>
 
@@ -170,7 +170,7 @@
 
   <div id="end-overlay">
     <div id="end-box">
-      <h1>Goed samengewerkt,<br>wat een leuk park!</h1>
+      <h1>Goed gewerkt,<br>wat een leuke parken!</h1>
 
       <div id="end-buttons">
         <!-- <button id="download-btn">Download je park</button> -->
@@ -182,18 +182,37 @@
   <div id="tooltip"></div>
   <div id="stage-container"></div>
   <div id="bot-stage-container"></div>
+  <div id="scroll-fade"></div>
 
   <script>
     let foutopspoor = false;
     let version = '2.2.1' // solo first version 
     // determine whether touch screen device is present
     const isMobileUI = window.matchMedia('(pointer: coarse)').matches;
+
+    function isCompactLayout() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
     window.addEventListener('load', () => { fitStageToContainer(); });
     window.addEventListener('resize', () => { fitStageToContainer(); });
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', fitStageToContainer);
     }
+
+    const fade = document.getElementById("scroll-fade");
+
+    function updateScrollFade() {
+        const atBottom =
+            window.innerHeight + window.scrollY >=
+            document.body.scrollHeight - 2;
+
+        fade.style.opacity = atBottom ? "0" : "1";
+    }
+
+    window.addEventListener("scroll", updateScrollFade);
+    window.addEventListener("resize", updateScrollFade);
+
 
     let mobileTouchStart = null;
     let mobileTouchCurrent = null;
@@ -206,7 +225,7 @@
 
         { time:  9000, action: "place", type: "tree1", x: 8,  y: 6 },
 
-        { time: 14000, action: "place", type: "bush3", x: 7,  y: 9 },
+        { time: 14000, action: "place", type: "bush3", x: 6,  y: 9 },
 
         { time: 20000, action: "path", startX: 5, startY: 11, endX: 10, endY: 11 },
 
@@ -214,9 +233,9 @@
 
         { time: 25000, action: "path", startX: 10, startY: 11, endX: 10, endY: 7 },
 
-        { time: 27000, action: "place", type: "fun12", x: 6,  y: 7 },      // swing
+        { time: 27000, action: "place", type: "fun12", x: 6,  y: 8 },      // swing
 
-        { time: 34000, action: "place", type: "flbed2", x: 9,  y: 7 },
+        { time: 34000, action: "place", type: "flbed2", x: 11,  y: 6 },
 
         { time: 41000, action: "place", type: "bush1", x: 11, y: 10 },
 
@@ -301,17 +320,37 @@
           y: scale
         });
 
-        botStage.scale({
-          x: scale * 0.5,
-          y: scale * 0.5
-        });
-
-
         stage.width(width * scale);
         stage.height(height * scale);
 
-        botStage.width(width * scale * 0.5);
-        botStage.height(height * scale * 0.5);
+        if (!gameEnded) {
+          botStage.scale({
+            x: scale * 0.5,
+            y: scale * 0.5
+          });
+
+          botStage.width(width * scale * 0.5);
+          botStage.height(height * scale * 0.5);
+        } else {
+          if (!isCompactLayout) {
+            botStage.scale({
+              x: scale * 0.5,
+              y: scale * 0.5
+            });
+
+            botStage.width(width * scale * 0.5);
+            botStage.height(height * scale * 0.5);
+          } else {
+            botStage.scale({
+              x: scale,
+              y: scale
+            });
+
+            botStage.width(width * scale);
+            botStage.height(height * scale);
+            }
+        }
+        
 
         if (foutopspoor) {
           const rect = stage.container().getBoundingClientRect();
@@ -325,6 +364,8 @@
             canvasHeight=${canvas.clientHeight}
           `;
         }
+
+        updateScrollFade();
       });
     }
 
@@ -487,8 +528,8 @@
       botDeleteCursor.image(botDeleteImg);
     };
 
-    cursorLayer.add(botPlaceCursor);
-    cursorLayer.add(botDeleteCursor);
+    botCursorLayer.add(botPlaceCursor);
+    botCursorLayer.add(botDeleteCursor);
 
     // completion badge in cursor layer
     const completeBadgeImg = new Image();
@@ -578,6 +619,50 @@
 
       path: { w: 1, h: 1, c: 6 },
     };
+
+    const spriteNames = {
+      tree1: "Naaldboom",
+      tree2: "Loofboom",
+      tree3: "Fruitboom",
+
+      bush1: "Struik blauw",
+      bush2: "Struik oranje",
+      bush3: "Struik groen",
+
+      flbed1: "Blauw bloemenperk",
+      flbed2: "Rood bloemenperk",
+      flbed3: "Geel bloemenperk",
+         
+      fun1: "Basketbalveld",
+      fun2: "Foodtruck",
+      fun3: "Ijstruck",
+      fun4: "Koffietent",
+      fun5: "Schaaktafel",
+      fun6: "Eendenvijver",
+      fun7: "Fontein",
+      fun8: "Half-pipe",
+      fun9: "Kinderboerderij",
+      fun10: "Voetbalveld",
+      fun11: "Standbeeld",
+      fun12: "Schommel",
+      fun13: "Wip-wap",
+      fun14: "?",
+      fun15: "Glijbaan",
+
+      rot1: "Bankje (N)",
+      rot2: "Bankje (O)",
+      rot3: "Bankje (Z)",
+      rot4: "Bankje (W)",
+      
+
+      path: "Zandpad",
+    }
+
+    function addBotFeedItem(type) {
+        const feed = document.getElementById("bot-feed");
+        feed.innerText = '';
+        feed.innerText = 'Andere speler bouwt: ' + spriteNames[type];
+    }
 
     const tooltip = document.getElementById('tooltip');
 
@@ -671,30 +756,81 @@
 
     }
 
+    // function executeBotEvent(event) {
+
+    //     switch(event.action) {
+
+    //         case "place":
+    //             placeSprite(event.type, event.x, event.y, true);
+    //             break;
+
+    //         case "path":
+    //             createPathSection(
+    //                 event.startX,
+    //                 event.startY,
+    //                 event.endX,
+    //                 event.endY,
+    //                 "bot"
+    //             );
+    //             break;
+
+    //         case "delete":
+    //             deleteSprite(event.x, event.y, true);
+    //             break;
+
+    //     }
+
+    // }
     function executeBotEvent(event) {
 
-        switch(event.action) {
+      switch (event.action) {
+          case "place":
+              moveBotCursorTo(
+                  event.x,
+                  event.y,
+                  "place",
+                  event.type,
+                  () => {
+                      placeSprite(event.type, event.x, event.y, true);
+                  }
+              );
+              if (isCompactLayout()) {
+                  addBotFeedItem(event.type);
+              }
+              break;              
+          case "path":
+              moveBotCursorTo(
+                  event.startX,
+                  event.startY,
+                  "place",
+                  "path",
+                  () => {
+                      createPathSection(
+                          event.startX,
+                          event.startY,
+                          event.endX,
+                          event.endY,
+                          "bot"
+                      );
+                  }
+              );
+              if (isCompactLayout()) {
+                  addBotFeedItem("path");
+              }
+              break;
+          case "delete":
+              moveBotCursorTo(
+                  event.x,
+                  event.y,
+                  "delete",
+                  null,
+                  () => {
+                      deleteSprite(event.x, event.y, true);
+                  }
+              );
 
-            case "place":
-                placeSprite(event.type, event.x, event.y, true);
-                break;
-
-            case "path":
-                createPathSection(
-                    event.startX,
-                    event.startY,
-                    event.endX,
-                    event.endY,
-                    "bot"
-                );
-                break;
-
-            case "delete":
-                deleteSprite(event.x, event.y, true);
-                break;
-
-        }
-
+              break;
+      }
     }
 
     // link music buttons
@@ -901,6 +1037,14 @@
       highlightLayer.draw();
       cursorLayer.draw();
 
+      if (isCompactLayout) {
+        document.getElementById("bot-stage-container").style.display = "block";
+        document.getElementById("sidebar").style.display = "none"
+
+        fitStageToContainer();
+  
+      }
+
       // show overlay
       document.getElementById('end-overlay').style.display = 'flex';
       playEndMusic();
@@ -910,20 +1054,20 @@
         launchConfetti();
       }, 800);
 
-      // download button
-      document.getElementById('download-btn').onclick = () => {
+      // // download button
+      // document.getElementById('download-btn').onclick = () => {
 
-        const link = document.createElement('a');
+      //   const link = document.createElement('a');
 
-        link.download = 'mijn-park.png';
-        link.href = dataURL;
+      //   link.download = 'mijn-park.png';
+      //   link.href = dataURL;
 
-        document.body.appendChild(link);
+      //   document.body.appendChild(link);
 
-        link.click();
+      //   link.click();
 
-        document.body.removeChild(link);
-      };
+      //   document.body.removeChild(link);
+      // };
 
       // survey button
       document.getElementById('survey-btn').onclick = () => {
@@ -2492,7 +2636,7 @@
                           if (callback) callback();
 
                           botBusy = false;
-                          endBotTurn();
+                          // endBotTurn();
                         }
                       });
                     }
